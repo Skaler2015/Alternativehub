@@ -9,6 +9,8 @@ import { ToolLogo } from "@/components/tools/tool-logo";
 import { RatingStars } from "@/components/tools/rating-stars";
 import { prisma } from "@/lib/prisma";
 import { getComparisonBySlug } from "@/lib/data/queries";
+import { computeAwards, buildVerdict } from "@/lib/compare";
+import { AwardsGrid } from "@/components/compare/awards-grid";
 import { buildMetadata } from "@/lib/seo";
 import { PRICING_LABELS } from "@/lib/constants";
 import { formatNumber } from "@/lib/utils";
@@ -94,6 +96,25 @@ export default async function ComparisonPage({ params }: { params: Params }) {
     (cmp.winnerId && tools.find((t) => t.id === cmp.winnerId)) ||
     [...tools].sort((a, b) => b.alternativeScore - a.alternativeScore)[0];
 
+  // AI-style award verdicts computed from real data
+  const awards = computeAwards(
+    tools.map((t) => ({
+      id: t.id, slug: t.slug, name: t.name, logoUrl: t.logoUrl,
+      rating: t.rating, alternativeScore: t.alternativeScore, aiScore: t.aiScore,
+      trustScore: t.trustScore, popularityScore: t.popularityScore,
+      pricingModel: t.pricingModel, isOpenSource: t.isOpenSource, apiAvailable: t.apiAvailable,
+      gdpr: t.gdpr, soc2: t.soc2, hasFreeTrial: t.hasFreeTrial,
+      integrations: t.integrations, categorySlug: t.category.slug,
+    })),
+  );
+  const verdict = cmp.summary ?? buildVerdict(tools.map((t) => ({
+    id: t.id, slug: t.slug, name: t.name, logoUrl: t.logoUrl, rating: t.rating,
+    alternativeScore: t.alternativeScore, aiScore: t.aiScore, trustScore: t.trustScore,
+    popularityScore: t.popularityScore, pricingModel: t.pricingModel, isOpenSource: t.isOpenSource,
+    apiAvailable: t.apiAvailable, gdpr: t.gdpr, soc2: t.soc2, hasFreeTrial: t.hasFreeTrial,
+    integrations: t.integrations, categorySlug: t.category.slug,
+  })), awards);
+
   const rows: {
     label: string;
     render: (t: CompareTool) => React.ReactNode;
@@ -138,8 +159,30 @@ export default async function ComparisonPage({ params }: { params: Params }) {
         </span>
       ),
     },
+    {
+      label: "Free trial",
+      render: (t) => (t.hasFreeTrial ? <Check className="size-4 text-emerald-500" /> : <X className="size-4 text-rose-500" />),
+    },
+    {
+      label: "API available",
+      render: (t) => (t.apiAvailable ? <Check className="size-4 text-emerald-500" /> : <X className="size-4 text-rose-500" />),
+    },
+    {
+      label: "GDPR",
+      render: (t) => (t.gdpr ? <Check className="size-4 text-emerald-500" /> : <Minus className="size-4 text-muted-foreground/50" />),
+    },
+    {
+      label: "SOC 2",
+      render: (t) => (t.soc2 ? <Check className="size-4 text-emerald-500" /> : <Minus className="size-4 text-muted-foreground/50" />),
+    },
+    {
+      label: "Integrations",
+      render: (t) => (t.integrations.length > 0 ? `${t.integrations.length}+` : "—"),
+    },
+    { label: "Launched", render: (t) => (t.launchYear ? String(t.launchYear) : "—") },
     { label: "Alternative Score", render: (t) => <b>{Math.round(t.alternativeScore)}/100</b> },
     { label: "AI Score", render: (t) => <b>{Math.round(t.aiScore)}/100</b> },
+    { label: "Trust Score", render: (t) => <b>{Math.round(t.trustScore)}/100</b> },
     { label: "Popularity", render: (t) => formatNumber(t.viewCount) + " views" },
     { label: "Open source", render: (t) => (t.isOpenSource ? <Check className="size-4 text-emerald-500" /> : <X className="size-4 text-rose-500" />) },
     ...allFeatures.map(([featureId, featureName]) => ({
@@ -170,12 +213,16 @@ export default async function ComparisonPage({ params }: { params: Params }) {
 
       <h1 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">{cmp.title}</h1>
 
-      {cmp.summary && (
-        <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary">AI Verdict</p>
-          <p className="mt-1.5 text-sm leading-relaxed">{cmp.summary}</p>
-        </div>
-      )}
+      <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-primary">The Verdict</p>
+        <p className="mt-1.5 text-sm leading-relaxed">{verdict}</p>
+      </div>
+
+      {/* Award winners */}
+      <div className="mt-6">
+        <h2 className="mb-3 text-lg font-semibold">Winners by category</h2>
+        <AwardsGrid awards={awards} />
+      </div>
 
       {/* Comparison table */}
       <div className="mt-8 overflow-x-auto rounded-2xl border">
