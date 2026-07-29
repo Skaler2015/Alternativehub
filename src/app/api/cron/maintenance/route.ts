@@ -7,6 +7,7 @@ import {
   enrichTool,
 } from "@/lib/automation";
 import { aiEnabled, summarizeReviews } from "@/lib/ai";
+import { recomputeAllReputations } from "@/lib/community";
 import { invalidate, invalidatePrefix, CACHE_KEYS } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
@@ -106,6 +107,13 @@ export async function GET(req: Request) {
     }
   } else {
     summary.aiEnriched = "skipped (no AI provider configured)";
+  }
+
+  // 5. Recompute community reputation for all contributors
+  try {
+    summary.reputationsRecomputed = await recomputeAllReputations();
+  } catch (err) {
+    summary.reputationError = String(err);
   }
 
   // Refresh caches so users see fresh data immediately

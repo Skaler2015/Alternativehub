@@ -4,6 +4,7 @@ import { getApiUser } from "@/lib/authz";
 import { reviewSchema } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
 import { recomputeToolScores } from "@/lib/automation";
+import { recomputeUserReputation } from "@/lib/community";
 import { invalidate, CACHE_KEYS } from "@/lib/cache";
 
 type Params = Promise<{ slug: string }>;
@@ -49,6 +50,7 @@ export async function POST(req: Request, { params }: { params: Params }) {
   });
 
   await recomputeToolScores(tool.id);
+  await recomputeUserReputation(user.id).catch(() => {});
   await invalidate(CACHE_KEYS.tool(slug), CACHE_KEYS.home);
 
   return NextResponse.json({ ok: true, id: review.id }, { status: 201 });

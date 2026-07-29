@@ -28,6 +28,7 @@ const FOOTER_LINKS = [
     title: "Company",
     links: [
       { label: "Blog", href: "/blog" },
+      { label: "Leaderboard", href: "/leaderboard" },
       { label: "Submit a Tool", href: "/submit" },
       { label: "RSS Feed", href: "/rss.xml" },
       { label: "Sitemap", href: "/sitemap.xml" },

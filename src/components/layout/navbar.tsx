@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { href: "/tools", label: "Browse" },
   { href: "/categories", label: "Categories" },
   { href: "/compare", label: "Compare" },
+  { href: "/leaderboard", label: "Leaderboard" },
   { href: "/blog", label: "Blog" },
 ];
 

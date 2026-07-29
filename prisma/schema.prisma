@@ -109,6 +109,7 @@ model User {
   role           UserRole  @default(USER)
   bio            String?
   website        String?
+  reputation     Int       @default(0)
   isBanned       Boolean   @default(false)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt

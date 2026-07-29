@@ -344,7 +344,7 @@ export async function getToolReviews(toolId: string, take = 10) {
       where: { toolId, approved: true },
       orderBy: [{ helpful: "desc" }, { createdAt: "desc" }],
       take,
-      include: { user: { select: { name: true, image: true } } },
+      include: { user: { select: { id: true, name: true, image: true } } },
     }),
   );
 }

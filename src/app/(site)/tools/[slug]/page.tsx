@@ -386,7 +386,7 @@ export default async function ToolPage({ params }: { params: Params }) {
             </div>
           )}
 
-          <ReviewSection slug={tool.slug} reviews={reviews} />
+          <ReviewSection slug={tool.slug} reviews={reviews} currentUserId={session?.user?.id ?? null} />
         </div>
 
         {/* ── Sidebar ── */}

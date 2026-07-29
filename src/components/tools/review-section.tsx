@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Star } from "lucide-react";
+import { Star, ThumbsUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/misc";
@@ -18,10 +19,18 @@ type ReviewData = {
   body: string;
   helpful: number;
   createdAt: string | Date;
-  user: { name: string | null; image: string | null };
+  user: { id?: string; name: string | null; image: string | null };
 };
 
-export function ReviewSection({ slug, reviews }: { slug: string; reviews: ReviewData[] }) {
+export function ReviewSection({
+  slug,
+  reviews,
+  currentUserId,
+}: {
+  slug: string;
+  reviews: ReviewData[];
+  currentUserId?: string | null;
+}) {
   const { status } = useSession();
   const router = useRouter();
   const [rating, setRating] = React.useState(0);
@@ -30,6 +39,31 @@ export function ReviewSection({ slug, reviews }: { slug: string; reviews: Review
   const [body, setBody] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
   const [formOpen, setFormOpen] = React.useState(false);
+  const [helpfulState, setHelpfulState] = React.useState<
+    Record<string, { count: number; voted: boolean }>
+  >({});
+
+  const voteHelpful = async (reviewId: string, current: number) => {
+    if (status !== "authenticated") {
+      router.push("/login");
+      return;
+    }
+    // optimistic
+    const prev = helpfulState[reviewId] ?? { count: current, voted: false };
+    setHelpfulState((s) => ({
+      ...s,
+      [reviewId]: { count: prev.count + (prev.voted ? -1 : 1), voted: !prev.voted },
+    }));
+    const res = await fetch(`/api/reviews/${reviewId}/helpful`, { method: "POST" });
+    if (res.ok) {
+      const data = await res.json().catch(() => null);
+      if (data) setHelpfulState((s) => ({ ...s, [reviewId]: { count: data.helpful, voted: data.voted } }));
+    } else {
+      setHelpfulState((s) => ({ ...s, [reviewId]: prev })); // revert
+      const data = await res.json().catch(() => null);
+      toast.error(data?.error ?? "Could not register your vote");
+    }
+  };
 
   const submit = async () => {
     if (status !== "authenticated") {
@@ -123,23 +157,57 @@ export function ReviewSection({ slug, reviews }: { slug: string; reviews: Review
         </p>
       ) : (
         <div className="space-y-4">
-          {reviews.map((review) => (
-            <article key={review.id} className="rounded-2xl border bg-card p-5">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarImage src={review.user.image ?? undefined} />
-                  <AvatarFallback>{getInitials(review.user.name ?? "A")}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium">{review.user.name ?? "Anonymous"}</p>
-                  <p className="text-xs text-muted-foreground">{timeAgo(review.createdAt)}</p>
+          {reviews.map((review) => {
+            const hs = helpfulState[review.id] ?? { count: review.helpful, voted: false };
+            const isOwn = !!currentUserId && review.user.id === currentUserId;
+            const displayName = review.user.name ?? "Anonymous";
+            return (
+              <article key={review.id} className="rounded-2xl border bg-card p-5">
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarImage src={review.user.image ?? undefined} />
+                    <AvatarFallback>{getInitials(review.user.name ?? "A")}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    {review.user.id ? (
+                      <Link
+                        href={`/u/${review.user.id}`}
+                        className="text-sm font-medium transition-colors hover:text-primary"
+                      >
+                        {displayName}
+                      </Link>
+                    ) : (
+                      <p className="text-sm font-medium">{displayName}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">{timeAgo(review.createdAt)}</p>
+                  </div>
+                  <RatingStars rating={review.rating} className="ml-auto" />
                 </div>
-                <RatingStars rating={review.rating} className="ml-auto" />
-              </div>
-              {review.title && <h3 className="mt-3 font-medium">{review.title}</h3>}
-              <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{review.body}</p>
-            </article>
-          ))}
+                {review.title && <h3 className="mt-3 font-medium">{review.title}</h3>}
+                <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{review.body}</p>
+                {!isOwn && (
+                  <button
+                    type="button"
+                    onClick={() => voteHelpful(review.id, review.helpful)}
+                    className={cn(
+                      "mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors",
+                      hs.voted
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:border-primary/40 hover:text-primary",
+                    )}
+                  >
+                    <ThumbsUp className={cn("size-3.5", hs.voted && "fill-current")} />
+                    Helpful{hs.count > 0 ? ` · ${hs.count}` : ""}
+                  </button>
+                )}
+                {isOwn && hs.count > 0 && (
+                  <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <ThumbsUp className="size-3.5" /> {hs.count} found this helpful
+                  </p>
+                )}
+              </article>
+            );
+          })}
         </div>
       )}
     </section>
