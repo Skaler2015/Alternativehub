@@ -1,0 +1,67 @@
+name: Deploy to Production
+
+# Jab bhi 'main' branch par code push hota hai, yeh workflow:
+#   1. Database migrations production DB par apply karta hai
+#   2. Search index (Meilisearch) sync karta hai (agar configured ho)
+#   3. Site ko Vercel par deploy karta hai
+#
+# Yani: aap sirf code push karo -> live site apne-aap update ho jaati hai.
+#
+# ISE CHALANE KE LIYE GitHub repo -> Settings -> Secrets and variables -> Actions
+# me ye secrets add karein:
+#   DATABASE_URL          (Neon/Supabase ki production PostgreSQL string)
+#   VERCEL_TOKEN          (vercel.com -> Account Settings -> Tokens)
+#   VERCEL_ORG_ID         (Vercel project ki .vercel/project.json me milta hai)
+#   VERCEL_PROJECT_ID     (wahi file me)
+#   MEILISEARCH_HOST      (optional - search sync ke liye)
+#   MEILISEARCH_API_KEY   (optional)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {} # manual trigger bhi kar sakte hain
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false # deploys ko beech me cancel mat karo
+
+jobs:
+  deploy:
+    name: Migrate & Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply database migrations to production
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma migrate deploy
+
+      - name: Sync search index (optional)
+        if: ${{ env.MEILISEARCH_HOST != '' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MEILISEARCH_HOST: ${{ secrets.MEILISEARCH_HOST }}
+          MEILISEARCH_API_KEY: ${{ secrets.MEILISEARCH_API_KEY }}
+        run: npm run search:sync
+
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          npm i -g vercel@latest
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          vercel build --prod --token="$VERCEL_TOKEN"
+          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
