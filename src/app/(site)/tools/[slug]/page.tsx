@@ -4,12 +4,19 @@ import type { Metadata } from "next";
 import {
   ArrowUpRight,
   BadgeCheck,
+  BookOpen,
+  Briefcase,
   Building2,
   Check,
   Download,
   Globe,
+  History,
   Minus,
+  Plug,
+  Scale,
+  ShieldCheck,
   Tag as TagIcon,
+  Target,
   Users,
   X,
 } from "lucide-react";
@@ -264,6 +271,50 @@ export default async function ToolPage({ params }: { params: Params }) {
             </section>
           )}
 
+          {(tool.useCases.length > 0 || tool.industries.length > 0) && (
+            <section className="grid gap-4 sm:grid-cols-2">
+              {tool.useCases.length > 0 && (
+                <div className="rounded-2xl border bg-card p-5">
+                  <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
+                    <Target className="size-4 text-primary" /> Use Cases
+                  </h2>
+                  <ul className="space-y-2">
+                    {tool.useCases.map((u) => (
+                      <li key={u} className="flex gap-2 text-sm text-muted-foreground">
+                        <Check className="mt-0.5 size-4 shrink-0 text-primary" /> {u}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {tool.industries.length > 0 && (
+                <div className="rounded-2xl border bg-card p-5">
+                  <h2 className="mb-3 flex items-center gap-2 text-base font-semibold">
+                    <Briefcase className="size-4 text-primary" /> Industries
+                  </h2>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tool.industries.map((i) => (
+                      <Badge key={i} variant="secondary">{i}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {tool.integrations.length > 0 && (
+            <section>
+              <h2 className="flex items-center gap-2 text-xl font-semibold">
+                <Plug className="size-5 text-primary" /> Integrations
+              </h2>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {tool.integrations.map((i) => (
+                  <span key={i} className="rounded-lg border bg-card px-3 py-1.5 text-sm">{i}</span>
+                ))}
+              </div>
+            </section>
+          )}
+
           <ScreenshotGallery media={tool.media} toolName={tool.name} />
 
           {tool.pricingPlans.length > 0 && (
@@ -350,7 +401,37 @@ export default async function ToolPage({ params }: { params: Params }) {
               {tool.company && (
                 <div className="flex justify-between gap-2">
                   <dt className="text-muted-foreground">Developer</dt>
-                  <dd className="font-medium">{tool.company.name}</dd>
+                  <dd className="font-medium text-right">{tool.company.name}</dd>
+                </div>
+              )}
+              {tool.launchYear && (
+                <div className="flex justify-between gap-2">
+                  <dt className="text-muted-foreground">Launched</dt>
+                  <dd className="font-medium">{tool.launchYear}</dd>
+                </div>
+              )}
+              {tool.company?.founder && (
+                <div className="flex justify-between gap-2">
+                  <dt className="text-muted-foreground">Founder</dt>
+                  <dd className="font-medium text-right">{tool.company.founder}</dd>
+                </div>
+              )}
+              {tool.company?.employees && (
+                <div className="flex justify-between gap-2">
+                  <dt className="text-muted-foreground">Team size</dt>
+                  <dd className="font-medium text-right">{tool.company.employees}</dd>
+                </div>
+              )}
+              {tool.company?.funding && (
+                <div className="flex justify-between gap-2">
+                  <dt className="text-muted-foreground">Funding</dt>
+                  <dd className="font-medium text-right">{tool.company.funding}</dd>
+                </div>
+              )}
+              {tool.company?.country && (
+                <div className="flex justify-between gap-2">
+                  <dt className="text-muted-foreground">HQ</dt>
+                  <dd className="font-medium">{tool.company.country}</dd>
                 </div>
               )}
               <div className="flex justify-between gap-2">
@@ -376,6 +457,63 @@ export default async function ToolPage({ params }: { params: Params }) {
               </>
             )}
           </div>
+
+          {/* Security & Capabilities */}
+          <div className="rounded-2xl border bg-card p-5">
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+              <ShieldCheck className="size-3.5" /> Security & Capabilities
+            </h3>
+            <ul className="mt-3 space-y-2 text-sm">
+              {[
+                { label: "API available", on: tool.apiAvailable },
+                { label: "Free trial", on: tool.hasFreeTrial },
+                { label: "GDPR compliant", on: tool.gdpr },
+                { label: "SOC 2", on: tool.soc2 },
+              ].map((row) => (
+                <li key={row.label} className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">{row.label}</span>
+                  {row.on ? (
+                    <Check className="size-4 text-emerald-500" />
+                  ) : (
+                    <Minus className="size-4 text-muted-foreground/50" />
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {(tool.docsUrl || tool.changelogUrl || tool.downloadUrl) && (
+            <div className="rounded-2xl border bg-card p-5">
+              <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+                <BookOpen className="size-3.5" /> Resources
+              </h3>
+              <div className="mt-3 flex flex-col gap-2 text-sm">
+                {tool.docsUrl && (
+                  <a href={tool.docsUrl} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                    <BookOpen className="size-3.5" /> Documentation <ArrowUpRight className="size-3" />
+                  </a>
+                )}
+                {tool.changelogUrl && (
+                  <a href={tool.changelogUrl} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                    <History className="size-3.5" /> Changelog <ArrowUpRight className="size-3" />
+                  </a>
+                )}
+                {tool.downloadUrl && (
+                  <a href={tool.downloadUrl} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                    <Download className="size-3.5" /> Download <ArrowUpRight className="size-3" />
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {alternatives.length > 0 && (
+            <Button variant="outline" className="w-full" asChild>
+              <Link href={`/compare/${[tool.slug, alternatives[0].slug].sort().join("-vs-")}`}>
+                <Scale className="size-4" /> Compare with {alternatives[0].name}
+              </Link>
+            </Button>
+          )}
 
           {tool.tags.length > 0 && (
             <div className="rounded-2xl border bg-card p-5">

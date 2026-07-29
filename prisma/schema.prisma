@@ -179,6 +179,9 @@ model Company {
   logoUrl     String?
   foundedYear Int?
   country     String?
+  founder     String?
+  employees   String?
+  funding     String?
   createdAt   DateTime @default(now())
 
   tools Tool[]
@@ -253,6 +256,18 @@ model Tool {
   featured   Boolean @default(false)
   verified   Boolean @default(false)
   isOpenSource Boolean @default(false)
+
+  // Information-hub details (Phase 2)
+  launchYear   Int?
+  apiAvailable Boolean  @default(false)
+  hasFreeTrial Boolean  @default(false)
+  gdpr         Boolean  @default(false)
+  soc2         Boolean  @default(false)
+  docsUrl      String?
+  changelogUrl String?
+  useCases     String[]
+  industries   String[]
+  integrations String[]
 
   // SEO
   seoTitle    String?
