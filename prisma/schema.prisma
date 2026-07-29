@@ -236,10 +236,11 @@ model Tool {
   priceFrom    Decimal?     @db.Decimal(10, 2)
 
   // AI-generated content (human-overridable)
-  aiSummary String?
-  pros      String[]
-  cons      String[]
-  bestFor   String[]
+  aiSummary     String?
+  reviewSummary String?
+  pros          String[]
+  cons          String[]
+  bestFor       String[]
 
   // Denormalized scores for read performance
   rating           Float @default(0)

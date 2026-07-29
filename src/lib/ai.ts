@@ -267,6 +267,46 @@ export async function rankAlternatives(input: {
   );
 }
 
+/** AI chat assistant — answers grounded in the provided tool catalog context. */
+export async function chatAssistant(input: {
+  message: string;
+  toolsContext: string;
+  history?: { role: "user" | "assistant"; content: string }[];
+}): Promise<string | null> {
+  const system =
+    "You are AlternativeHub's friendly discovery assistant. Help users find and choose software. " +
+    "Recommend ONLY tools from the CATALOG provided below — never invent tools or links. " +
+    "Be concise (2-4 sentences), mention specific tool names, and briefly say why each fits. " +
+    "If the catalog has nothing relevant, say so and suggest browsing categories.";
+
+  const historyText = (input.history ?? [])
+    .slice(-4)
+    .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
+    .join("\n");
+
+  const prompt =
+    `CATALOG:\n${input.toolsContext || "(no matching tools found)"}\n\n` +
+    (historyText ? `Conversation so far:\n${historyText}\n\n` : "") +
+    `User question: ${input.message}`;
+
+  return generateText(system, prompt);
+}
+
+/** AI review summary — condenses user reviews into a short "what users say" blurb. */
+export async function summarizeReviews(input: {
+  toolName: string;
+  reviews: { rating: number; body: string }[];
+}): Promise<string | null> {
+  if (input.reviews.length < 2) return null;
+  const system =
+    "You summarize user reviews for a software directory. Write a neutral 2-3 sentence summary of the " +
+    "overall sentiment — what users praise and what they criticize. No markdown, no bullet points.";
+  const prompt =
+    `Summarize the reviews for ${input.toolName}:\n\n` +
+    input.reviews.slice(0, 20).map((r) => `[${r.rating}/5] ${r.body}`).join("\n");
+  return generateText(system, prompt);
+}
+
 /** AI comparison verdict for the comparison engine. */
 export async function generateComparisonSummary(input: {
   tools: { name: string; pros: string[]; cons: string[]; pricingModel: string }[];

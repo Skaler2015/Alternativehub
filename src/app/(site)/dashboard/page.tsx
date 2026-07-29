@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Bookmark, Eye, Star, Upload } from "lucide-react";
+import { Bookmark, Eye, Sparkles, Star, Upload } from "lucide-react";
 import { requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { ToolCard } from "@/components/tools/tool-card";
-import { toolCardSelect } from "@/lib/data/queries";
+import { toolCardSelect, getPersonalizedTools } from "@/lib/data/queries";
 import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const user = await requireUser();
 
-  const [bookmarkCount, reviewCount, submissions, recent] = await Promise.all([
+  const [bookmarkCount, reviewCount, submissions, recent, recommended] = await Promise.all([
     prisma.bookmark.count({ where: { userId: user.id } }),
     prisma.review.count({ where: { userId: user.id } }),
     prisma.tool.findMany({
@@ -26,6 +26,7 @@ export default async function DashboardPage() {
       take: 4,
       include: { tool: { select: toolCardSelect } },
     }),
+    getPersonalizedTools(user.id, 4),
   ]);
 
   const stats = [
@@ -74,6 +75,19 @@ export default async function DashboardPage() {
                   {tool.status.toLowerCase()}
                 </Badge>
               </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {recommended.length > 0 && (
+        <section>
+          <h2 className="mb-3 flex items-center gap-1.5 font-semibold">
+            <Sparkles className="size-4 text-primary" /> Recommended for you
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {recommended.map((tool) => (
+              <ToolCard key={tool.id} tool={tool} />
             ))}
           </div>
         </section>

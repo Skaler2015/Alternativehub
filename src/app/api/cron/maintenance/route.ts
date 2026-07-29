@@ -6,7 +6,7 @@ import {
   detectAlternatives,
   enrichTool,
 } from "@/lib/automation";
-import { aiEnabled } from "@/lib/ai";
+import { aiEnabled, summarizeReviews } from "@/lib/ai";
 import { invalidate, invalidatePrefix, CACHE_KEYS } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
@@ -80,6 +80,27 @@ export async function GET(req: Request) {
       });
       for (const t of unenriched) await enrichTool(t.id).catch(() => {});
       summary.aiEnriched = unenriched.length;
+
+      // AI review summaries for tools with enough reviews but no summary yet
+      const needSummary = await prisma.tool.findMany({
+        where: { status: "PUBLISHED", deletedAt: null, reviewSummary: null, reviewCount: { gte: 2 } },
+        select: { id: true, name: true },
+        take: 5,
+      });
+      let summarized = 0;
+      for (const t of needSummary) {
+        const reviews = await prisma.review.findMany({
+          where: { toolId: t.id, approved: true },
+          select: { rating: true, body: true },
+          take: 20,
+        });
+        const text = await summarizeReviews({ toolName: t.name, reviews }).catch(() => null);
+        if (text) {
+          await prisma.tool.update({ where: { id: t.id }, data: { reviewSummary: text } }).catch(() => {});
+          summarized += 1;
+        }
+      }
+      summary.reviewsSummarized = summarized;
     } catch (err) {
       summary.aiError = String(err);
     }

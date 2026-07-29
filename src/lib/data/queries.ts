@@ -283,6 +283,61 @@ export async function getToolBySlug(slug: string) {
   );
 }
 
+/**
+ * Personalized recommendations — from the categories of a user's bookmarks and
+ * recently-viewed tools, surface top tools they haven't seen yet. Falls back to
+ * popular tools when there's no history. Deterministic (no AI cost).
+ */
+export async function getPersonalizedTools(userId: string, take = 8): Promise<ToolCard[]> {
+  return safe([] as ToolCard[], async () => {
+    const [bookmarks, viewed] = await Promise.all([
+      prisma.bookmark.findMany({
+        where: { userId },
+        select: { toolId: true, tool: { select: { categoryId: true } } },
+        take: 50,
+      }),
+      prisma.recentlyViewed.findMany({
+        where: { userId },
+        select: { toolId: true, tool: { select: { categoryId: true } } },
+        orderBy: { viewedAt: "desc" },
+        take: 50,
+      }),
+    ]);
+
+    const seenIds = new Set([...bookmarks, ...viewed].map((r) => r.toolId));
+    const categoryIds = Array.from(
+      new Set([...bookmarks, ...viewed].map((r) => r.tool.categoryId)),
+    );
+
+    if (categoryIds.length === 0) {
+      // No history yet → popular tools
+      return prisma.tool.findMany({
+        where: PUBLISHED,
+        select: toolCardSelect,
+        orderBy: { popularityScore: "desc" },
+        take,
+      });
+    }
+
+    const recs = await prisma.tool.findMany({
+      where: { ...PUBLISHED, categoryId: { in: categoryIds }, id: { notIn: Array.from(seenIds) } },
+      select: toolCardSelect,
+      orderBy: [{ rating: "desc" }, { popularityScore: "desc" }],
+      take,
+    });
+
+    if (recs.length >= take) return recs;
+    // Top up with popular tools not already recommended
+    const fill = await prisma.tool.findMany({
+      where: { ...PUBLISHED, id: { notIn: [...seenIds, ...recs.map((r) => r.id)] } },
+      select: toolCardSelect,
+      orderBy: { popularityScore: "desc" },
+      take: take - recs.length,
+    });
+    return [...recs, ...fill];
+  });
+}
+
 export async function getToolReviews(toolId: string, take = 10) {
   return safe([], () =>
     prisma.review.findMany({

@@ -15,6 +15,7 @@ import {
   Plug,
   Scale,
   ShieldCheck,
+  Sparkles,
   Tag as TagIcon,
   Target,
   Users,
@@ -374,6 +375,15 @@ export default async function ToolPage({ params }: { params: Params }) {
                 ))}
               </Accordion>
             </section>
+          )}
+
+          {tool.reviewSummary && (
+            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
+                <Sparkles className="size-3.5" /> What users say
+              </p>
+              <p className="mt-1.5 text-sm leading-relaxed">{tool.reviewSummary}</p>
+            </div>
           )}
 
           <ReviewSection slug={tool.slug} reviews={reviews} />
