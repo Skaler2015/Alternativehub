@@ -6,6 +6,7 @@ import {
   detectAlternatives,
   enrichTool,
 } from "@/lib/automation";
+import { aiEnabled } from "@/lib/ai";
 import { invalidate, invalidatePrefix, CACHE_KEYS } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
@@ -69,8 +70,8 @@ export async function GET(req: Request) {
     summary.similarError = String(err);
   }
 
-  // 4. AI enrichment — only when a key is configured
-  if (process.env.ANTHROPIC_API_KEY) {
+  // 4. AI enrichment — only when an AI provider (Gemini or Anthropic) is configured
+  if (aiEnabled()) {
     try {
       const unenriched = await prisma.tool.findMany({
         where: { status: "PUBLISHED", deletedAt: null, aiSummary: null },
@@ -83,7 +84,7 @@ export async function GET(req: Request) {
       summary.aiError = String(err);
     }
   } else {
-    summary.aiEnriched = "skipped (no ANTHROPIC_API_KEY)";
+    summary.aiEnriched = "skipped (no AI provider configured)";
   }
 
   // Refresh caches so users see fresh data immediately

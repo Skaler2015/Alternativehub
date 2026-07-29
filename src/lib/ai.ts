@@ -1,26 +1,174 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 /**
- * AI content layer — Claude (Anthropic).
+ * AI content layer — provider-agnostic.
  *
  * Generates summaries, pros/cons, tags, FAQs, SEO metadata and category
- * suggestions for tool listings. All functions return null when
- * ANTHROPIC_API_KEY is unset so the platform runs fine without AI configured.
+ * suggestions for tool listings.
  *
- * Uses structured outputs (output_config.format) so responses are guaranteed
- * to match the schema, and server-side refusal fallbacks so classifier
- * declines transparently retry on a fallback model.
+ * Provider selection (controlled by AI_PROVIDER: "gemini" | "anthropic" | "auto"):
+ *   - "auto" (default): prefer Google Gemini (has a free tier) when
+ *     GEMINI_API_KEY is set, otherwise fall back to Anthropic Claude when
+ *     ANTHROPIC_API_KEY is set.
+ *   - "gemini": force Gemini.
+ *   - "anthropic": force Claude.
+ * If no key is configured, every function returns null and the platform runs
+ * fine without AI.
+ *
+ * This lets you start free on Gemini and switch to paid Claude later by just
+ * adding ANTHROPIC_API_KEY and setting AI_PROVIDER=anthropic — no code change.
  */
 
-const MODEL = process.env.AI_MODEL ?? "claude-opus-5";
+type Provider = "gemini" | "anthropic";
 
-let client: Anthropic | null | undefined;
+function pickProvider(): Provider | null {
+  const pref = (process.env.AI_PROVIDER ?? "auto").toLowerCase();
+  const hasGemini = Boolean(process.env.GEMINI_API_KEY);
+  const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY);
 
-function getClient(): Anthropic | null {
-  if (client !== undefined) return client;
-  client = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
-  return client;
+  if (pref === "gemini") return hasGemini ? "gemini" : null;
+  if (pref === "anthropic") return hasAnthropic ? "anthropic" : null;
+  // auto — prefer the free provider first
+  if (hasGemini) return "gemini";
+  if (hasAnthropic) return "anthropic";
+  return null;
 }
+
+// ── Anthropic (Claude) ──────────────────────────────────────────────────
+
+let anthropicClient: Anthropic | null | undefined;
+function getAnthropic(): Anthropic | null {
+  if (anthropicClient !== undefined) return anthropicClient;
+  anthropicClient = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
+  return anthropicClient;
+}
+
+async function anthropicJson<T>(
+  system: string,
+  prompt: string,
+  schema: Record<string, unknown>,
+): Promise<T | null> {
+  const client = getAnthropic();
+  if (!client) return null;
+  const model = process.env.AI_MODEL ?? "claude-opus-5";
+  const response = await client.beta.messages.create({
+    model,
+    max_tokens: 8192,
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    system,
+    output_config: { format: { type: "json_schema", schema } },
+    messages: [{ role: "user", content: prompt }],
+  });
+  if (response.stop_reason === "refusal") return null;
+  const text = response.content.find((b) => b.type === "text");
+  if (!text || text.type !== "text") return null;
+  try {
+    return JSON.parse(text.text) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function anthropicText(system: string, prompt: string): Promise<string | null> {
+  const client = getAnthropic();
+  if (!client) return null;
+  const model = process.env.AI_MODEL ?? "claude-opus-5";
+  const response = await client.beta.messages.create({
+    model,
+    max_tokens: 1024,
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    system,
+    messages: [{ role: "user", content: prompt }],
+  });
+  if (response.stop_reason === "refusal") return null;
+  const text = response.content.find((b) => b.type === "text");
+  return text && text.type === "text" ? text.text : null;
+}
+
+// ── Google Gemini (free tier) ───────────────────────────────────────────
+
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+
+async function geminiGenerate(
+  system: string,
+  prompt: string,
+  jsonMode: boolean,
+): Promise<string | null> {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) return null;
+  const model = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+
+  try {
+    const res = await fetch(`${GEMINI_BASE}/${model}:generateContent?key=${key}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      signal: AbortSignal.timeout(30000),
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: jsonMode ? { responseMimeType: "application/json" } : {},
+      }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function geminiJson<T>(
+  system: string,
+  prompt: string,
+  schema: Record<string, unknown>,
+): Promise<T | null> {
+  // Describe the exact JSON shape in the prompt (Gemini JSON mode + schema hint)
+  const augmented = `${prompt}\n\nRespond ONLY with a JSON object matching this JSON Schema (no markdown, no commentary):\n${JSON.stringify(schema)}`;
+  const raw = await geminiGenerate(system, augmented, true);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    // occasionally wrapped in ```json … ``` — strip and retry
+    const cleaned = raw.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+    try {
+      return JSON.parse(cleaned) as T;
+    } catch {
+      return null;
+    }
+  }
+}
+
+// ── Unified helpers ─────────────────────────────────────────────────────
+
+async function generateJson<T>(
+  system: string,
+  prompt: string,
+  schema: Record<string, unknown>,
+): Promise<T | null> {
+  const provider = pickProvider();
+  if (provider === "gemini") return geminiJson<T>(system, prompt, schema);
+  if (provider === "anthropic") return anthropicJson<T>(system, prompt, schema);
+  return null;
+}
+
+async function generateText(system: string, prompt: string): Promise<string | null> {
+  const provider = pickProvider();
+  if (provider === "gemini") return geminiGenerate(system, prompt, false);
+  if (provider === "anthropic") return anthropicText(system, prompt);
+  return null;
+}
+
+/** True when at least one AI provider is configured. */
+export function aiEnabled(): boolean {
+  return pickProvider() !== null;
+}
+
+// ── Public API ──────────────────────────────────────────────────────────
 
 export type GeneratedToolContent = {
   summary: string;
@@ -65,47 +213,27 @@ const TOOL_CONTENT_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+const TOOL_CONTENT_SYSTEM =
+  "You are the content engine for AlternativeHub, a software-alternatives discovery platform. " +
+  "Write accurate, neutral, useful listing content. Never invent features; when unsure, stay general. " +
+  "Cons must be genuine drawbacks users report, not softballs.";
+
 export async function generateToolContent(input: {
   name: string;
   description: string;
   websiteUrl: string;
   categories: string[];
 }): Promise<GeneratedToolContent | null> {
-  const anthropic = getClient();
-  if (!anthropic) return null;
-
-  const response = await anthropic.beta.messages.create({
-    model: MODEL,
-    max_tokens: 8192,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    system:
-      "You are the content engine for AlternativeHub, a software-alternatives discovery platform. " +
-      "Write accurate, neutral, useful listing content. Never invent features; when unsure, stay general. " +
-      "Cons must be genuine drawbacks users report, not softballs.",
-    output_config: {
-      format: { type: "json_schema", schema: TOOL_CONTENT_SCHEMA },
-    },
-    messages: [
-      {
-        role: "user",
-        content:
-          `Generate listing content for this tool.\n\n` +
-          `Name: ${input.name}\nWebsite: ${input.websiteUrl}\n` +
-          `Description: ${input.description}\n\n` +
-          `Available category slugs: ${input.categories.join(", ")}`,
-      },
-    ],
-  });
-
-  if (response.stop_reason === "refusal") return null;
-  const text = response.content.find((b) => b.type === "text");
-  if (!text || text.type !== "text") return null;
-  try {
-    return JSON.parse(text.text) as GeneratedToolContent;
-  } catch {
-    return null;
-  }
+  const prompt =
+    `Generate listing content for this tool.\n\n` +
+    `Name: ${input.name}\nWebsite: ${input.websiteUrl}\n` +
+    `Description: ${input.description}\n\n` +
+    `Available category slugs: ${input.categories.join(", ")}`;
+  return generateJson<GeneratedToolContent>(
+    TOOL_CONTENT_SYSTEM,
+    prompt,
+    TOOL_CONTENT_SCHEMA as unknown as Record<string, unknown>,
+  );
 }
 
 const RECOMMENDATION_SCHEMA = {
@@ -128,67 +256,28 @@ export async function rankAlternatives(input: {
   toolDescription: string;
   candidates: { slug: string; name: string; tagline: string | null }[];
 }): Promise<{ recommendations: string[]; reasoning: string } | null> {
-  const anthropic = getClient();
-  if (!anthropic) return null;
-
-  const response = await anthropic.beta.messages.create({
-    model: MODEL,
-    max_tokens: 2048,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    output_config: { format: { type: "json_schema", schema: RECOMMENDATION_SCHEMA } },
-    messages: [
-      {
-        role: "user",
-        content:
-          `Rank the best alternatives to "${input.toolName}" (${input.toolDescription}).\n\n` +
-          `Candidates:\n${input.candidates.map((c) => `- ${c.slug}: ${c.name} — ${c.tagline ?? ""}`).join("\n")}\n\n` +
-          `Return only slugs from the candidate list, strongest alternative first.`,
-      },
-    ],
-  });
-
-  if (response.stop_reason === "refusal") return null;
-  const text = response.content.find((b) => b.type === "text");
-  if (!text || text.type !== "text") return null;
-  try {
-    return JSON.parse(text.text) as { recommendations: string[]; reasoning: string };
-  } catch {
-    return null;
-  }
+  const prompt =
+    `Rank the best alternatives to "${input.toolName}" (${input.toolDescription}).\n\n` +
+    `Candidates:\n${input.candidates.map((c) => `- ${c.slug}: ${c.name} — ${c.tagline ?? ""}`).join("\n")}\n\n` +
+    `Return only slugs from the candidate list, strongest alternative first.`;
+  return generateJson(
+    "You recommend the best software alternatives objectively.",
+    prompt,
+    RECOMMENDATION_SCHEMA as unknown as Record<string, unknown>,
+  );
 }
 
 /** AI comparison verdict for the comparison engine. */
 export async function generateComparisonSummary(input: {
   tools: { name: string; pros: string[]; cons: string[]; pricingModel: string }[];
 }): Promise<string | null> {
-  const anthropic = getClient();
-  if (!anthropic) return null;
-
-  const response = await anthropic.beta.messages.create({
-    model: MODEL,
-    max_tokens: 1024,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    messages: [
-      {
-        role: "user",
-        content:
-          `Write a neutral 3-4 sentence comparison verdict for: ` +
-          input.tools.map((t) => t.name).join(" vs ") +
-          `.\n\nData:\n` +
-          input.tools
-            .map(
-              (t) =>
-                `${t.name} (${t.pricingModel}) — Pros: ${t.pros.join("; ")}. Cons: ${t.cons.join("; ")}.`,
-            )
-            .join("\n") +
-          `\n\nName which tool wins for which use case. Plain prose, no markdown.`,
-      },
-    ],
-  });
-
-  if (response.stop_reason === "refusal") return null;
-  const text = response.content.find((b) => b.type === "text");
-  return text && text.type === "text" ? text.text : null;
+  const prompt =
+    `Write a neutral 3-4 sentence comparison verdict for: ` +
+    input.tools.map((t) => t.name).join(" vs ") +
+    `.\n\nData:\n` +
+    input.tools
+      .map((t) => `${t.name} (${t.pricingModel}) — Pros: ${t.pros.join("; ")}. Cons: ${t.cons.join("; ")}.`)
+      .join("\n") +
+    `\n\nName which tool wins for which use case. Plain prose, no markdown.`;
+  return generateText("You write objective, concise software comparison verdicts.", prompt);
 }
