@@ -43,72 +43,146 @@ const PUBLISHED = { status: "PUBLISHED" as const, deletedAt: null };
 
 // ─────────────────────────────── Home ───────────────────────────────
 
-export async function getHomeData() {
+const EMPTY_HOME = {
+  featured: [] as ToolCard[],
+  topRated: [] as ToolCard[],
+  newest: [] as ToolCard[],
+  trendingAi: [] as ToolCard[],
+  trendingApps: [] as ToolCard[],
+  aiPicks: [] as ToolCard[],
+  openSource: [] as ToolCard[],
+  bestFree: [] as ToolCard[],
+  enterprise: [] as ToolCard[],
+  comparisons: [] as { slug: string; title: string; summary: string | null }[],
+  posts: [] as { slug: string; title: string; excerpt: string; coverUrl: string | null; category: string; publishedAt: Date | null }[],
+};
+
+export async function getHomeData(): Promise<typeof EMPTY_HOME> {
   return cached(CACHE_KEYS.home, 300, () =>
-    safe(
-      {
-        featured: [] as ToolCard[],
-        topRated: [] as ToolCard[],
-        newest: [] as ToolCard[],
-        trendingAi: [] as ToolCard[],
-        trendingApps: [] as ToolCard[],
-        aiPicks: [] as ToolCard[],
-        comparisons: [] as { slug: string; title: string; summary: string | null }[],
-        posts: [] as { slug: string; title: string; excerpt: string; coverUrl: string | null; category: string; publishedAt: Date | null }[],
-      },
-      async () => {
-        const [featured, topRated, newest, trendingAi, trendingApps, aiPicks, comparisons, posts] =
-          await Promise.all([
-            prisma.tool.findMany({
-              where: { ...PUBLISHED, featured: true },
-              select: toolCardSelect,
-              orderBy: { popularityScore: "desc" },
-              take: 8,
-            }),
-            prisma.tool.findMany({
-              where: { ...PUBLISHED, reviewCount: { gt: 0 } },
-              select: toolCardSelect,
-              orderBy: [{ rating: "desc" }, { reviewCount: "desc" }],
-              take: 8,
-            }),
-            prisma.tool.findMany({
-              where: PUBLISHED,
-              select: toolCardSelect,
-              orderBy: { publishedAt: "desc" },
-              take: 8,
-            }),
-            prisma.tool.findMany({
-              where: { ...PUBLISHED, category: { slug: "ai-tools" } },
-              select: toolCardSelect,
-              orderBy: { popularityScore: "desc" },
-              take: 8,
-            }),
-            prisma.tool.findMany({
-              where: { ...PUBLISHED, category: { slug: "apps" } },
-              select: toolCardSelect,
-              orderBy: { popularityScore: "desc" },
-              take: 8,
-            }),
-            prisma.tool.findMany({
-              where: { ...PUBLISHED, aiScore: { gte: 85 } },
-              select: toolCardSelect,
-              orderBy: { aiScore: "desc" },
-              take: 8,
-            }),
-            prisma.comparison.findMany({
-              orderBy: [{ featured: "desc" }, { viewCount: "desc" }],
-              select: { slug: true, title: true, summary: true },
-              take: 4,
-            }),
-            prisma.blogPost.findMany({
-              where: { published: true },
-              orderBy: { publishedAt: "desc" },
-              select: { slug: true, title: true, excerpt: true, coverUrl: true, category: true, publishedAt: true },
-              take: 3,
-            }),
-          ]);
-        return { featured, topRated, newest, trendingAi, trendingApps, aiPicks, comparisons, posts };
-      },
+    safe(EMPTY_HOME, async () => {
+      const [
+        featured, topRated, newest, trendingAi, trendingApps, aiPicks,
+        openSource, bestFree, enterprise, comparisons, posts,
+      ] = await Promise.all([
+        prisma.tool.findMany({
+          where: { ...PUBLISHED, featured: true },
+          select: toolCardSelect,
+          orderBy: { popularityScore: "desc" },
+          take: 8,
+        }),
+        prisma.tool.findMany({
+          where: { ...PUBLISHED, reviewCount: { gt: 0 } },
+          select: toolCardSelect,
+          orderBy: [{ rating: "desc" }, { reviewCount: "desc" }],
+          take: 8,
+        }),
+        prisma.tool.findMany({
+          where: PUBLISHED,
+          select: toolCardSelect,
+          orderBy: { publishedAt: "desc" },
+          take: 8,
+        }),
+        prisma.tool.findMany({
+          where: { ...PUBLISHED, category: { slug: "ai-tools" } },
+          select: toolCardSelect,
+          orderBy: { popularityScore: "desc" },
+          take: 8,
+        }),
+        prisma.tool.findMany({
+          where: { ...PUBLISHED, category: { slug: "apps" } },
+          select: toolCardSelect,
+          orderBy: { popularityScore: "desc" },
+          take: 8,
+        }),
+        prisma.tool.findMany({
+          where: { ...PUBLISHED, aiScore: { gte: 85 } },
+          select: toolCardSelect,
+          orderBy: { aiScore: "desc" },
+          take: 8,
+        }),
+        prisma.tool.findMany({
+          where: { ...PUBLISHED, isOpenSource: true },
+          select: toolCardSelect,
+          orderBy: { popularityScore: "desc" },
+          take: 8,
+        }),
+        prisma.tool.findMany({
+          where: { ...PUBLISHED, pricingModel: { in: ["FREE", "FREEMIUM", "OPEN_SOURCE"] } },
+          select: toolCardSelect,
+          orderBy: [{ rating: "desc" }, { popularityScore: "desc" }],
+          take: 8,
+        }),
+        prisma.tool.findMany({
+          where: { ...PUBLISHED, category: { slug: { in: ["saas", "crm", "erp", "cloud"] } } },
+          select: toolCardSelect,
+          orderBy: { popularityScore: "desc" },
+          take: 8,
+        }),
+        prisma.comparison.findMany({
+          orderBy: [{ featured: "desc" }, { viewCount: "desc" }],
+          select: { slug: true, title: true, summary: true },
+          take: 4,
+        }),
+        prisma.blogPost.findMany({
+          where: { published: true },
+          orderBy: { publishedAt: "desc" },
+          select: { slug: true, title: true, excerpt: true, coverUrl: true, category: true, publishedAt: true },
+          take: 3,
+        }),
+      ]);
+      return {
+        featured, topRated, newest, trendingAi, trendingApps, aiPicks,
+        openSource, bestFree, enterprise, comparisons, posts,
+      };
+    }),
+  );
+}
+
+export type PlatformStats = {
+  tools: number;
+  categories: number;
+  reviews: number;
+  comparisons: number;
+  totalViews: number;
+};
+
+export async function getPlatformStats(): Promise<PlatformStats> {
+  return cached(CACHE_KEYS.stats, 600, () =>
+    safe({ tools: 0, categories: 0, reviews: 0, comparisons: 0, totalViews: 0 }, async () => {
+      const [tools, categories, reviews, comparisons, views] = await Promise.all([
+        prisma.tool.count({ where: PUBLISHED }),
+        prisma.category.count(),
+        prisma.review.count({ where: { approved: true } }),
+        prisma.comparison.count(),
+        prisma.tool.aggregate({ where: PUBLISHED, _sum: { viewCount: true } }),
+      ]);
+      return { tools, categories, reviews, comparisons, totalViews: views._sum.viewCount ?? 0 };
+    }),
+  );
+}
+
+export type Testimonial = {
+  id: string;
+  rating: number;
+  title: string | null;
+  body: string;
+  user: { name: string | null; image: string | null };
+  tool: { name: string; slug: string; logoUrl: string | null };
+};
+
+export async function getTestimonials(): Promise<Testimonial[]> {
+  return cached(CACHE_KEYS.testimonials, 600, () =>
+    safe([] as Testimonial[], () =>
+      prisma.review.findMany({
+        where: { approved: true, rating: { gte: 4 }, body: { not: "" } },
+        orderBy: [{ rating: "desc" }, { helpful: "desc" }],
+        take: 6,
+        select: {
+          id: true, rating: true, title: true, body: true,
+          user: { select: { name: true, image: true } },
+          tool: { select: { name: true, slug: true, logoUrl: true } },
+        },
+      }),
     ),
   );
 }

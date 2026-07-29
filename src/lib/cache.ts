@@ -66,7 +66,9 @@ export async function bumpViewCount(toolId: string): Promise<void> {
 }
 
 export const CACHE_KEYS = {
-  home: "v1:home",
+  home: "v2:home",
+  stats: "v2:stats",
+  testimonials: "v2:testimonials",
   trending: "v1:trending",
   categories: "v1:categories",
   tool: (slug: string) => `v1:tool:${slug}`,
