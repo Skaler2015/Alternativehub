@@ -191,8 +191,12 @@ export async function detectAlternatives(toolId: string): Promise<void> {
   }
 }
 
-/** Broken-link sweep: HEAD-check websites, open reports for failures. */
-export async function checkBrokenLinks(batchSize = 50): Promise<{ checked: number; broken: number }> {
+/**
+ * Broken-link sweep: HEAD-check websites concurrently, open a report for each
+ * failure. Skips tools that already have an OPEN broken-link report so daily
+ * runs don't pile up duplicates.
+ */
+export async function checkBrokenLinks(batchSize = 30): Promise<{ checked: number; broken: number }> {
   const tools = await prisma.tool.findMany({
     where: { status: "PUBLISHED", deletedAt: null },
     select: { id: true, websiteUrl: true },
@@ -200,24 +204,34 @@ export async function checkBrokenLinks(batchSize = 50): Promise<{ checked: numbe
     take: batchSize,
   });
 
-  let broken = 0;
-  for (const tool of tools) {
-    try {
-      const res = await fetch(tool.websiteUrl, {
-        method: "HEAD",
-        signal: AbortSignal.timeout(8000),
-        redirect: "follow",
-      });
-      if (res.status >= 400) throw new Error(String(res.status));
-    } catch {
-      broken += 1;
-      await prisma.report
-        .create({
-          data: { toolId: tool.id, reason: "BROKEN_LINK", detail: "Automated link check failed" },
-        })
-        .catch(() => {});
-    }
-  }
+  const results = await Promise.allSettled(
+    tools.map(async (tool) => {
+      try {
+        const res = await fetch(tool.websiteUrl, {
+          method: "HEAD",
+          signal: AbortSignal.timeout(6000),
+          redirect: "follow",
+        });
+        if (res.status >= 400) throw new Error(String(res.status));
+        return true;
+      } catch {
+        const existing = await prisma.report.findFirst({
+          where: { toolId: tool.id, reason: "BROKEN_LINK", status: "OPEN" },
+          select: { id: true },
+        });
+        if (!existing) {
+          await prisma.report
+            .create({
+              data: { toolId: tool.id, reason: "BROKEN_LINK", detail: "Automated link check failed" },
+            })
+            .catch(() => {});
+        }
+        return false;
+      }
+    }),
+  );
+
+  const broken = results.filter((r) => r.status === "fulfilled" && r.value === false).length;
   return { checked: tools.length, broken };
 }
 

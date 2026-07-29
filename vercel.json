@@ -2,5 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "prisma generate && prisma migrate deploy && tsx scripts/seed-if-empty.ts && next build",
-  "installCommand": "npm ci"
+  "installCommand": "npm ci",
+  "crons": [
+    { "path": "/api/cron/maintenance", "schedule": "0 2 * * *" }
+  ]
 }
