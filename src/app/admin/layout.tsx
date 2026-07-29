@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  BarChart3,
   FileUp,
   Flag,
   LayoutDashboard,
@@ -13,6 +14,7 @@ import { requireRole } from "@/lib/authz";
 
 const LINKS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/listings", label: "Listings", icon: ListChecks },
   { href: "/admin/reviews", label: "Reviews", icon: MessageSquare },
   { href: "/admin/reports", label: "Reports", icon: Flag },

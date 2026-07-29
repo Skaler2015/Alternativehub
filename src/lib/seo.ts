@@ -54,6 +54,18 @@ export function websiteJsonLd() {
   };
 }
 
+export function organizationJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: SITE.name,
+    url: SITE.url,
+    description: SITE.description,
+    logo: `${SITE.url}/icon.svg`,
+    sameAs: [`https://twitter.com/${SITE.twitter.replace(/^@/, "")}`],
+  };
+}
+
 export function softwareAppJsonLd(tool: {
   name: string;
   description: string;

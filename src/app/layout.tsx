@@ -3,7 +3,8 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Providers } from "@/components/layout/providers";
 import { JsonLd } from "@/components/seo/json-ld";
-import { websiteJsonLd } from "@/lib/seo";
+import { RegisterSW } from "@/components/pwa/register-sw";
+import { websiteJsonLd, organizationJsonLd } from "@/lib/seo";
 import { SITE } from "@/lib/constants";
 import "./globals.css";
 
@@ -15,6 +16,12 @@ export const metadata: Metadata = {
   },
   description: SITE.description,
   applicationName: SITE.name,
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: SITE.name,
+  },
   keywords: [
     "alternatives", "app alternatives", "software alternatives", "AI tools",
     "SaaS alternatives", "open source alternatives", "compare software",
@@ -47,7 +54,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans antialiased`}>
         <JsonLd data={websiteJsonLd()} />
+        <JsonLd data={organizationJsonLd()} />
         <Providers>{children}</Providers>
+        <RegisterSW />
       </body>
     </html>
   );

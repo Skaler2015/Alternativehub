@@ -33,6 +33,7 @@ import { RatingStars } from "@/components/tools/rating-stars";
 import { ScoreRing } from "@/components/tools/score-ring";
 import { ToolActions } from "@/components/tools/tool-actions";
 import { ReviewSection } from "@/components/tools/review-section";
+import { TrackView } from "@/components/analytics/track-view";
 import { ScreenshotGallery } from "@/components/tools/screenshot-gallery";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -117,6 +118,7 @@ export default async function ToolPage({ params }: { params: Params }) {
           ...(tool.faqs.length ? [faqJsonLd(tool.faqs)] : []),
         ]}
       />
+      <TrackView type="TOOL_VIEW" toolId={tool.id} />
 
       <Breadcrumbs
         items={[
@@ -172,7 +174,7 @@ export default async function ToolPage({ params }: { params: Params }) {
                 href={outLink}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
-                data-track="click-out"
+                data-track={tool.affiliateUrl ? "affiliate" : "click-out"}
                 data-tool={tool.id}
               >
                 <Globe className="size-4" /> Visit Website <ArrowUpRight className="size-4" />

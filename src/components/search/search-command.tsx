@@ -9,6 +9,7 @@ import { ToolLogo } from "@/components/tools/tool-logo";
 import { TRENDING_SEARCHES } from "@/lib/constants";
 import { PRICING_LABELS } from "@/lib/constants";
 import type { SearchHit } from "@/lib/search";
+import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 type SpeechRecognitionLike = {
@@ -78,11 +79,13 @@ export function SearchCommand({
 
   const go = React.useCallback(
     (path: string) => {
+      const q = query.trim();
+      if (q) track({ type: "SEARCH", query: q });
       onOpenChange(false);
       setQuery("");
       router.push(path);
     },
-    [onOpenChange, router],
+    [onOpenChange, router, query],
   );
 
   const onKeyDown = (e: React.KeyboardEvent) => {

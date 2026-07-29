@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { getComparisonBySlug } from "@/lib/data/queries";
 import { computeAwards, buildVerdict } from "@/lib/compare";
 import { AwardsGrid } from "@/components/compare/awards-grid";
+import { TrackView } from "@/components/analytics/track-view";
 import { buildMetadata } from "@/lib/seo";
 import { PRICING_LABELS } from "@/lib/constants";
 import { formatNumber } from "@/lib/utils";
@@ -203,6 +204,7 @@ export default async function ComparisonPage({ params }: { params: Params }) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <TrackView type="COMPARE_VIEW" />
       <Breadcrumbs
         items={[
           { name: "Home", path: "/" },
