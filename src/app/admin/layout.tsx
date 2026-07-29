@@ -5,6 +5,7 @@ import {
   Flag,
   LayoutDashboard,
   ListChecks,
+  Mail,
   MessageSquare,
   Users,
 } from "lucide-react";
@@ -18,6 +19,7 @@ const LINKS = [
   { href: "/admin/listings", label: "Listings", icon: ListChecks },
   { href: "/admin/reviews", label: "Reviews", icon: MessageSquare },
   { href: "/admin/reports", label: "Reports", icon: Flag },
+  { href: "/admin/messages", label: "Messages", icon: Mail },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/import", label: "Bulk Import", icon: FileUp },
 ];

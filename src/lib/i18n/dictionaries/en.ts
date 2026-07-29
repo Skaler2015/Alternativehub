@@ -192,6 +192,18 @@ export const en = {
   "auth.adminPanel": "Admin Panel",
   "auth.account": "Account",
 
+  // ── Cookie consent ──
+  "cookie.text": "We use essential cookies to keep you signed in and remember your language. We use privacy-friendly analytics — no ad tracking.",
+  "cookie.accept": "Got it",
+  "cookie.learnMore": "Learn more",
+
+  // ── Footer legal ──
+  "footer.legal": "Legal",
+  "footer.about": "About",
+  "footer.contact": "Contact",
+  "footer.privacy": "Privacy Policy",
+  "footer.terms": "Terms of Service",
+
   // ── Offline ──
   "offline.title": "You're offline",
   "offline.body": "We couldn't reach AlternativeHub. Check your connection — pages you've already visited are still available.",

@@ -194,6 +194,18 @@ export const hi: Partial<Dictionary> = {
   "auth.adminPanel": "एडमिन पैनल",
   "auth.account": "अकाउंट",
 
+  // ── Cookie consent ──
+  "cookie.text": "हम आपको साइन-इन रखने और आपकी भाषा याद रखने के लिए ज़रूरी कुकीज़ का उपयोग करते हैं। हम प्राइवेसी-फ्रेंडली एनालिटिक्स इस्तेमाल करते हैं — कोई विज्ञापन ट्रैकिंग नहीं।",
+  "cookie.accept": "समझ गया",
+  "cookie.learnMore": "और जानें",
+
+  // ── Footer legal ──
+  "footer.legal": "कानूनी",
+  "footer.about": "हमारे बारे में",
+  "footer.contact": "संपर्क करें",
+  "footer.privacy": "प्राइवेसी नीति",
+  "footer.terms": "सेवा की शर्तें",
+
   // ── Offline ──
   "offline.title": "आप ऑफ़लाइन हैं",
   "offline.body": "हम AlternativeHub तक नहीं पहुँच पाए। अपना कनेक्शन जाँचें — जो पेज आप पहले देख चुके हैं वे अब भी उपलब्ध हैं।",

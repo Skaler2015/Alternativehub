@@ -32,9 +32,18 @@ export async function Footer() {
     {
       titleKey: "footer.company",
       links: [
+        { labelKey: "footer.about", href: "/about" },
         { labelKey: "footer.blog", href: "/blog" },
         { labelKey: "footer.leaderboard", href: "/leaderboard" },
         { labelKey: "footer.submit", href: "/submit" },
+        { labelKey: "footer.contact", href: "/contact" },
+      ],
+    },
+    {
+      titleKey: "footer.legal",
+      links: [
+        { labelKey: "footer.privacy", href: "/privacy" },
+        { labelKey: "footer.terms", href: "/terms" },
         { labelKey: "footer.rss", href: "/rss.xml" },
         { labelKey: "footer.sitemap", href: "/sitemap.xml" },
       ],
@@ -44,7 +53,7 @@ export async function Footer() {
   return (
     <footer className="mt-24 border-t bg-card/40">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-6">
           <div className="lg:col-span-2">
             <Logo />
             <p className="mt-4 max-w-sm text-sm text-muted-foreground">{SITE.description}</p>

@@ -2,6 +2,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { ChatWidget } from "@/components/ai/chat-widget";
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker";
+import { CookieConsent } from "@/components/legal/cookie-consent";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <Footer />
       <ChatWidget />
       <AnalyticsTracker />
+      <CookieConsent />
     </div>
   );
 }

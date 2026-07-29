@@ -53,3 +53,12 @@ export const trackEventSchema = z.object({
   toolId: z.string().max(64).optional(),
   query: z.string().max(200).optional(),
 });
+
+export const contactSchema = z.object({
+  name: z.string().trim().min(2, "Please enter your name").max(80),
+  email: z.string().trim().email("Enter a valid email address").max(160),
+  subject: z.string().trim().max(120).optional(),
+  message: z.string().trim().min(10, "Message must be at least 10 characters").max(4000),
+  // Honeypot: bots fill hidden fields; humans leave it empty.
+  website: z.string().max(0).optional(),
+});
