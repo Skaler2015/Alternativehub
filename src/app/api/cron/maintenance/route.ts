@@ -8,6 +8,7 @@ import {
 } from "@/lib/automation";
 import { aiEnabled, summarizeReviews } from "@/lib/ai";
 import { recomputeAllReputations } from "@/lib/community";
+import { emailEnabled, sendWeeklyDigest } from "@/lib/email";
 import { invalidate, invalidatePrefix, CACHE_KEYS } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
@@ -114,6 +115,18 @@ export async function GET(req: Request) {
     summary.reputationsRecomputed = await recomputeAllReputations();
   } catch (err) {
     summary.reputationError = String(err);
+  }
+
+  // 6. Weekly digest — only on Mondays, and only if email is configured.
+  //    Runs inside the daily cron (no extra Vercel cron entry needed).
+  if (emailEnabled() && new Date().getUTCDay() === 1) {
+    try {
+      summary.digestSent = await sendWeeklyDigest();
+    } catch (err) {
+      summary.digestError = String(err);
+    }
+  } else {
+    summary.digest = emailEnabled() ? "skipped (not Monday)" : "skipped (email not configured)";
   }
 
   // Refresh caches so users see fresh data immediately

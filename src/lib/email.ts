@@ -1,4 +1,6 @@
 import { SITE } from "@/lib/constants";
+import { prisma } from "@/lib/prisma";
+import { unsubscribeUrl } from "@/lib/newsletter-token";
 
 /**
  * Transactional email via Resend (REST — no SDK, no extra dependency).
@@ -74,6 +76,7 @@ const btn = (href: string, label: string) =>
 
 /** Welcome email after a newsletter subscription. */
 export async function sendWelcomeEmail(to: string): Promise<boolean> {
+  const unsub = unsubscribeUrl(SITE.url, to);
   return sendEmail({
     to,
     subject: `Welcome to ${SITE.name} 🎉`,
@@ -84,8 +87,11 @@ export async function sendWelcomeEmail(to: string): Promise<boolean> {
         apps and AI tools — plus fresh comparisons and deals. No spam, unsubscribe anytime.
       </p>
       <p style="margin:24px 0 8px;">${btn(`${SITE.url}/tools`, "Explore trending tools")}</p>
+      <p style="color:#b0b4bd;font-size:11px;margin-top:20px;">
+        <a href="${unsub}" style="color:#9aa0ab;">Unsubscribe</a>
+      </p>
     `),
-    text: `Welcome to ${SITE.name}! Thanks for subscribing. Explore tools at ${SITE.url}/tools`,
+    text: `Welcome to ${SITE.name}! Thanks for subscribing. Explore tools at ${SITE.url}/tools\n\nUnsubscribe: ${unsub}`,
   });
 }
 
@@ -117,4 +123,81 @@ function escapeHtml(s: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+// ── Weekly digest ──────────────────────────────────────────────────────
+
+type DigestTool = { name: string; slug: string; tagline: string | null; logoUrl: string | null; category: { name: string } | null };
+
+function digestToolRow(t: DigestTool): string {
+  const url = `${SITE.url}/tools/${t.slug}`;
+  const logo = t.logoUrl
+    ? `<img src="${t.logoUrl}" width="40" height="40" alt="" style="border-radius:10px;display:block;" />`
+    : `<div style="width:40px;height:40px;border-radius:10px;background:#eee;"></div>`;
+  return `
+    <tr>
+      <td style="padding:12px 0;border-bottom:1px solid #f0f0f3;">
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td style="width:52px;vertical-align:top;">${logo}</td>
+          <td style="vertical-align:top;">
+            <a href="${url}" style="color:#16161f;font-weight:600;font-size:15px;text-decoration:none;">${escapeHtml(t.name)}</a>
+            ${t.category ? `<span style="color:#9aa0ab;font-size:12px;"> · ${escapeHtml(t.category.name)}</span>` : ""}
+            <div style="color:#4a4a57;font-size:13px;line-height:1.5;margin-top:2px;">${escapeHtml(t.tagline ?? "")}</div>
+          </td>
+        </tr></table>
+      </td>
+    </tr>`;
+}
+
+/**
+ * Send the weekly digest to all confirmed, subscribed addresses.
+ * No-op (returns 0) when email is disabled or there are no fresh tools.
+ * Each email carries a signed one-click unsubscribe link.
+ */
+export async function sendWeeklyDigest(limitTools = 6): Promise<number> {
+  if (!emailEnabled()) return 0;
+
+  const tools = (await prisma.tool
+    .findMany({
+      where: { status: "PUBLISHED", deletedAt: null },
+      orderBy: [{ createdAt: "desc" }, { popularityScore: "desc" }],
+      take: limitTools,
+      select: { name: true, slug: true, tagline: true, logoUrl: true, category: { select: { name: true } } },
+    })
+    .catch(() => [])) as DigestTool[];
+
+  if (tools.length === 0) return 0;
+
+  const subscribers = await prisma.newsletterSubscriber
+    .findMany({ where: { unsubscribedAt: null }, select: { email: true }, take: 2000 })
+    .catch(() => []);
+  if (subscribers.length === 0) return 0;
+
+  const rows = tools.map(digestToolRow).join("");
+  let sent = 0;
+
+  for (const sub of subscribers) {
+    const unsub = unsubscribeUrl(SITE.url, sub.email);
+    const html = shell(`
+      <h1 style="font-size:20px;margin:0 0 6px;color:#16161f;">This week's best tools 🚀</h1>
+      <p style="color:#4a4a57;font-size:14px;line-height:1.6;margin:0 0 8px;">
+        Fresh software, apps and AI tools worth a look — hand-picked from ${SITE.name}.
+      </p>
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%">${rows}</table>
+      <p style="margin:24px 0 4px;">${btn(`${SITE.url}/tools`, "Browse all tools")}</p>
+      <p style="color:#b0b4bd;font-size:11px;margin-top:20px;line-height:1.5;">
+        You're receiving this because you subscribed at ${SITE.url.replace(/^https?:\/\//, "")}.
+        <a href="${unsub}" style="color:#9aa0ab;">Unsubscribe</a>
+      </p>
+    `);
+    const ok = await sendEmail({
+      to: sub.email,
+      subject: `${tools[0].name} & more — this week on ${SITE.name}`,
+      html,
+      text: `This week's best tools on ${SITE.name}:\n${tools.map((t) => `- ${t.name}: ${SITE.url}/tools/${t.slug}`).join("\n")}\n\nUnsubscribe: ${unsub}`,
+    });
+    if (ok) sent += 1;
+  }
+
+  return sent;
 }
