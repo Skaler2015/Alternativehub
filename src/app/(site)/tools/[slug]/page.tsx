@@ -34,6 +34,7 @@ import { ScoreRing } from "@/components/tools/score-ring";
 import { ToolActions } from "@/components/tools/tool-actions";
 import { ReviewSection } from "@/components/tools/review-section";
 import { TrackView } from "@/components/analytics/track-view";
+import { getT } from "@/lib/i18n/server";
 import { ScreenshotGallery } from "@/components/tools/screenshot-gallery";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -69,6 +70,7 @@ export default async function ToolPage({ params }: { params: Params }) {
   if (!tool) notFound();
 
   const session = await auth();
+  const { t } = await getT();
   const [reviews, similar, userState] = await Promise.all([
     getToolReviews(tool.id),
     getSimilarTools(
@@ -177,13 +179,13 @@ export default async function ToolPage({ params }: { params: Params }) {
                 data-track={tool.affiliateUrl ? "affiliate" : "click-out"}
                 data-tool={tool.id}
               >
-                <Globe className="size-4" /> Visit Website <ArrowUpRight className="size-4" />
+                <Globe className="size-4" /> {t("tool.visitWebsite")} <ArrowUpRight className="size-4" />
               </a>
             </Button>
             {tool.downloadUrl && (
               <Button variant="outline" size="lg" asChild>
                 <a href={tool.downloadUrl} target="_blank" rel="noopener noreferrer nofollow">
-                  <Download className="size-4" /> Download
+                  <Download className="size-4" /> {t("tool.download")}
                 </a>
               </Button>
             )}

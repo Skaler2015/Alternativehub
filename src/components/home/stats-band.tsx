@@ -1,13 +1,15 @@
 import { FadeIn } from "@/components/motion/fade-in";
+import { getT } from "@/lib/i18n/server";
 import { formatNumber } from "@/lib/utils";
 import type { PlatformStats } from "@/lib/data/queries";
 
-export function StatsBand({ stats }: { stats: PlatformStats }) {
+export async function StatsBand({ stats }: { stats: PlatformStats }) {
+  const { t } = await getT();
   const items = [
-    { value: stats.tools, label: "Tools listed", suffix: "+" },
-    { value: stats.categories, label: "Categories", suffix: "" },
-    { value: stats.reviews, label: "Community reviews", suffix: "" },
-    { value: stats.totalViews, label: "Tools explored", suffix: "" },
+    { value: stats.tools, label: t("stats.tools"), suffix: "+" },
+    { value: stats.categories, label: t("stats.categories"), suffix: "" },
+    { value: stats.reviews, label: t("stats.reviews"), suffix: "" },
+    { value: stats.totalViews, label: t("stats.views"), suffix: "" },
   ];
 
   return (

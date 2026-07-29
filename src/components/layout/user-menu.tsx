@@ -13,10 +13,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useT } from "@/components/i18n/i18n-provider";
 import { getInitials } from "@/lib/utils";
 
 export function UserMenu() {
   const { data: session, status } = useSession();
+  const { t } = useT();
 
   if (status === "loading") {
     return <div className="size-8 animate-pulse rounded-full bg-muted" />;
@@ -26,10 +28,10 @@ export function UserMenu() {
     return (
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-          <Link href="/login">Log in</Link>
+          <Link href="/login">{t("auth.login")}</Link>
         </Button>
         <Button variant="gradient" size="sm" asChild>
-          <Link href="/register">Sign up</Link>
+          <Link href="/register">{t("auth.register")}</Link>
         </Button>
       </div>
     );
@@ -48,33 +50,33 @@ export function UserMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
-          <div className="truncate font-medium text-foreground">{user.name ?? "Account"}</div>
+          <div className="truncate font-medium text-foreground">{user.name ?? t("auth.account")}</div>
           <div className="truncate text-xs font-normal">{user.email}</div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/dashboard"><LayoutDashboard /> Dashboard</Link>
+          <Link href="/dashboard"><LayoutDashboard /> {t("auth.dashboard")}</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/dashboard/bookmarks"><Bookmark /> Bookmarks</Link>
+          <Link href="/dashboard/bookmarks"><Bookmark /> {t("auth.bookmarks")}</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/dashboard/reviews"><Star /> My Reviews</Link>
+          <Link href="/dashboard/reviews"><Star /> {t("auth.myReviews")}</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/dashboard/settings"><Settings /> Settings</Link>
+          <Link href="/dashboard/settings"><Settings /> {t("auth.settings")}</Link>
         </DropdownMenuItem>
         {isStaff && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/admin"><Shield /> Admin Panel</Link>
+              <Link href="/admin"><Shield /> {t("auth.adminPanel")}</Link>
             </DropdownMenuItem>
           </>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
-          <LogOut /> Log out
+          <LogOut /> {t("auth.logout")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

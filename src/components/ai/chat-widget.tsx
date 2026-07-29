@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, Loader2, Send, Sparkles, X } from "lucide-react";
 import { ToolLogo } from "@/components/tools/tool-logo";
+import { useT } from "@/components/i18n/i18n-provider";
 import { cn } from "@/lib/utils";
 
 type ChatTool = {
@@ -23,21 +24,14 @@ type Msg = {
   tools?: ChatTool[];
 };
 
-const SUGGESTIONS = [
-  "Free alternatives to Photoshop",
-  "Best AI tool for coding",
-  "Open-source password manager",
-];
-
 export function ChatWidget() {
+  const { t } = useT();
+  const SUGGESTIONS = [t("chat.s1"), t("chat.s2"), t("chat.s3")];
   const [open, setOpen] = React.useState(false);
   const [input, setInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [messages, setMessages] = React.useState<Msg[]>([
-    {
-      role: "assistant",
-      content: "Hi! I'm your AI assistant. Tell me what you're looking for and I'll find the best tools and alternatives for you.",
-    },
+    { role: "assistant", content: t("chat.greeting") },
   ]);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -64,10 +58,10 @@ export function ChatWidget() {
       if (res.ok) {
         setMessages((m) => [...m, { role: "assistant", content: data.answer, tools: data.tools }]);
       } else {
-        setMessages((m) => [...m, { role: "assistant", content: data.error ?? "Something went wrong. Try again." }]);
+        setMessages((m) => [...m, { role: "assistant", content: data.error ?? t("chat.error") }]);
       }
     } catch {
-      setMessages((m) => [...m, { role: "assistant", content: "Network error — please try again." }]);
+      setMessages((m) => [...m, { role: "assistant", content: t("chat.networkError") }]);
     } finally {
       setLoading(false);
     }
@@ -102,8 +96,8 @@ export function ChatWidget() {
                 <Bot className="size-4" />
               </span>
               <div>
-                <p className="text-sm font-semibold">AI Assistant</p>
-                <p className="text-[11px] text-muted-foreground">Find your next favorite tool</p>
+                <p className="text-sm font-semibold">{t("chat.title")}</p>
+                <p className="text-[11px] text-muted-foreground">{t("chat.subtitle")}</p>
               </div>
             </div>
 
@@ -173,7 +167,7 @@ export function ChatWidget() {
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about any tool..."
+                placeholder={t("chat.placeholder")}
                 className="flex-1 rounded-full border bg-background px-3.5 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
               />
               <button

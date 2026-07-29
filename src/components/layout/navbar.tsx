@@ -8,19 +8,23 @@ import { Logo } from "@/components/layout/logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
 import { SearchCommand } from "@/components/search/search-command";
+import { LanguageSwitcher } from "@/components/i18n/language-switcher";
+import { useT } from "@/components/i18n/i18n-provider";
 import { Button } from "@/components/ui/button";
+import type { TranslationKey } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const NAV_LINKS = [
-  { href: "/tools", label: "Browse" },
-  { href: "/categories", label: "Categories" },
-  { href: "/compare", label: "Compare" },
-  { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/blog", label: "Blog" },
+const NAV_LINKS: { href: string; key: TranslationKey }[] = [
+  { href: "/tools", key: "nav.browse" },
+  { href: "/categories", key: "nav.categories" },
+  { href: "/compare", key: "nav.compare" },
+  { href: "/leaderboard", key: "nav.leaderboard" },
+  { href: "/blog", key: "nav.blog" },
 ];
 
 export function Navbar() {
   const pathname = usePathname();
+  const { t } = useT();
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
@@ -42,7 +46,7 @@ export function Navbar() {
                   pathname.startsWith(link.href) && "text-foreground",
                 )}
               >
-                {link.label}
+                {t(link.key)}
               </Link>
             ))}
           </nav>
@@ -53,7 +57,7 @@ export function Navbar() {
               className="hidden h-9 w-full max-w-64 items-center gap-2 rounded-lg border bg-background/50 px-3 text-sm text-muted-foreground transition-colors hover:border-primary/40 sm:flex"
             >
               <Search className="size-4" />
-              <span className="flex-1 text-left">Search...</span>
+              <span className="flex-1 text-left">{t("nav.search")}</span>
               <kbd className="rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium">⌘K</kbd>
             </button>
             <Button
@@ -68,10 +72,11 @@ export function Navbar() {
 
             <Button variant="outline" size="sm" asChild className="hidden lg:inline-flex">
               <Link href="/submit">
-                <Plus /> Submit Tool
+                <Plus /> {t("nav.submit")}
               </Link>
             </Button>
 
+            <LanguageSwitcher />
             <ThemeToggle />
             <UserMenu />
 
@@ -95,14 +100,14 @@ export function Navbar() {
                 href={link.href}
                 className="block rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
               >
-                {link.label}
+                {t(link.key)}
               </Link>
             ))}
             <Link
               href="/submit"
               className="block rounded-lg px-3 py-2.5 text-sm font-medium text-primary hover:bg-accent"
             >
-              + Submit Tool
+              + {t("nav.submit")}
             </Link>
           </nav>
         )}

@@ -5,9 +5,11 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Search, Sparkles } from "lucide-react";
 import { SearchCommand } from "@/components/search/search-command";
+import { useT } from "@/components/i18n/i18n-provider";
 import { SEARCH_PLACEHOLDERS, TRENDING_SEARCHES } from "@/lib/constants";
 
 export function Hero({ toolCount }: { toolCount: number }) {
+  const { t } = useT();
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [placeholderIndex, setPlaceholderIndex] = React.useState(0);
 
@@ -30,7 +32,7 @@ export function Hero({ toolCount }: { toolCount: number }) {
         >
           <span className="inline-flex items-center gap-1.5 rounded-full border bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
             <Sparkles className="size-3 text-primary" />
-            {toolCount > 0 ? `${toolCount}+ tools, AI-analyzed & community-rated` : "AI-analyzed & community-rated"}
+            {toolCount > 0 ? `${toolCount}+ ${t("hero.badge")}` : t("hero.badgeNoCount")}
           </span>
         </motion.div>
 
@@ -40,9 +42,9 @@ export function Hero({ toolCount }: { toolCount: number }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
         >
-          Discover <span className="text-gradient">Better Alternatives</span>
+          {t("hero.titleA")} <span className="text-gradient">{t("hero.titleB")}</span>
           <br />
-          to any app or tool
+          {t("hero.titleC")}
         </motion.h1>
 
         <motion.p
@@ -51,8 +53,7 @@ export function Hero({ toolCount }: { toolCount: number }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
         >
-          The most advanced way to find alternatives for apps, websites, AI tools, desktop
-          software, SaaS, extensions, APIs and games — ranked by real users and AI.
+          {t("hero.subtitleFull")}
         </motion.p>
 
         <motion.div
@@ -74,7 +75,7 @@ export function Hero({ toolCount }: { toolCount: number }) {
           </button>
 
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-            <span className="text-xs text-muted-foreground">Trending:</span>
+            <span className="text-xs text-muted-foreground">{t("hero.trending")}</span>
             {TRENDING_SEARCHES.slice(0, 4).map((term) => (
               <Link
                 key={term}

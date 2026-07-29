@@ -27,16 +27,18 @@ import {
   getPlatformStats,
   getTestimonials,
 } from "@/lib/data/queries";
+import { getT } from "@/lib/i18n/server";
 import { formatDate, truncate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [data, categories, stats, testimonials] = await Promise.all([
+  const [data, categories, stats, testimonials, { t }] = await Promise.all([
     getHomeData(),
     getCategories(),
     getPlatformStats(),
     getTestimonials(),
+    getT(),
   ]);
 
   return (
@@ -46,16 +48,16 @@ export default async function HomePage() {
       <StatsBand stats={stats} />
 
       <ToolSection
-        title="Editor's Choice"
-        subtitle="Hand-picked tools worth switching to"
+        title={t("home.editorsChoice")}
+        subtitle={t("home.editorsChoice.sub")}
         tools={data.featured}
         href="/tools"
         icon={<Award className="size-5 text-violet-500" />}
       />
 
       <ToolSection
-        title="AI Recommended"
-        subtitle="Selected by our AI for exceptional quality"
+        title={t("home.aiRecommended")}
+        subtitle={t("home.aiRecommended.sub")}
         tools={data.aiPicks}
         href="/tools?sort=alternatives"
         icon={<Sparkles className="size-5 text-fuchsia-500" />}
@@ -64,56 +66,56 @@ export default async function HomePage() {
       <CategoryGrid categories={categories} />
 
       <ToolSection
-        title="Trending AI Tools"
-        subtitle="The AI tools everyone is switching to right now"
+        title={t("home.trendingAi")}
+        subtitle={t("home.trendingAiFull.sub")}
         tools={data.trendingAi}
         href="/categories/ai-tools"
         icon={<Bot className="size-5 text-emerald-500" />}
       />
 
       <ToolSection
-        title="Highest Rated"
-        subtitle="Top community ratings across all categories"
+        title={t("home.highestRated")}
+        subtitle={t("home.highestRated.sub")}
         tools={data.topRated}
         href="/tools?sort=rating"
         icon={<Star className="size-5 text-amber-500" />}
       />
 
       <ToolSection
-        title="Best Free Tools"
-        subtitle="Powerful software that costs nothing to start"
+        title={t("home.bestFree")}
+        subtitle={t("home.bestFreeFull.sub")}
         tools={data.bestFree}
         href="/tools?pricing=FREE"
         icon={<Gift className="size-5 text-rose-500" />}
       />
 
       <ToolSection
-        title="Open Source Picks"
-        subtitle="Own your data with these open-source favorites"
+        title={t("home.openSourcePicks")}
+        subtitle={t("home.openSourcePicks.sub")}
         tools={data.openSource}
         href="/tools?pricing=OPEN_SOURCE"
         icon={<GitFork className="size-5 text-sky-500" />}
       />
 
       <ToolSection
-        title="Enterprise Software"
-        subtitle="Trusted SaaS for teams and organizations"
+        title={t("home.enterpriseSoftware")}
+        subtitle={t("home.enterpriseSoftware.sub")}
         tools={data.enterprise}
         href="/categories/saas"
         icon={<Building2 className="size-5 text-indigo-500" />}
       />
 
       <ToolSection
-        title="Trending Apps"
-        subtitle="Popular apps gaining momentum this week"
+        title={t("home.trendingApps")}
+        subtitle={t("home.trendingAppsFull.sub")}
         tools={data.trendingApps}
         href="/categories/apps"
         icon={<Flame className="size-5 text-orange-500" />}
       />
 
       <ToolSection
-        title="Recently Added"
-        subtitle="Fresh tools just added to the hub"
+        title={t("home.recentlyAdded")}
+        subtitle={t("home.recentlyAdded.sub")}
         tools={data.newest}
         href="/tools?sort=newest"
         icon={<Rocket className="size-5 text-teal-500" />}
@@ -126,12 +128,12 @@ export default async function HomePage() {
               <div>
                 <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight sm:text-2xl">
                   <Scale className="size-5 text-indigo-500" />
-                  Latest Comparisons
+                  {t("home.latestComparisons")}
                 </h2>
-                <p className="mt-1 text-sm text-muted-foreground">Head-to-head breakdowns with a clear winner</p>
+                <p className="mt-1 text-sm text-muted-foreground">{t("home.latestComparisons.sub")}</p>
               </div>
               <Link href="/compare" className="group inline-flex items-center gap-1 text-sm font-medium text-primary">
-                View all <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                {t("common.viewAll")} <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -160,12 +162,12 @@ export default async function HomePage() {
             <div className="mb-5 flex items-end justify-between">
               <div>
                 <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight sm:text-2xl">
-                  <TrendingUp className="size-5 text-primary" /> From the Blog
+                  <TrendingUp className="size-5 text-primary" /> {t("home.fromBlog")}
                 </h2>
-                <p className="mt-1 text-sm text-muted-foreground">Guides, top lists and comparisons</p>
+                <p className="mt-1 text-sm text-muted-foreground">{t("home.blog.sub")}</p>
               </div>
               <Link href="/blog" className="group inline-flex items-center gap-1 text-sm font-medium text-primary">
-                All posts <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                {t("home.allPosts")} <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
@@ -198,9 +200,9 @@ export default async function HomePage() {
         <section className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="relative overflow-hidden rounded-3xl border bg-gradient-to-br from-indigo-500/10 via-violet-500/10 to-purple-500/10 px-6 py-14 text-center">
             <div className="aurora" aria-hidden />
-            <h2 className="relative text-2xl font-bold tracking-tight sm:text-3xl">Never miss a better tool</h2>
+            <h2 className="relative text-2xl font-bold tracking-tight sm:text-3xl">{t("home.neverMiss")}</h2>
             <p className="relative mx-auto mt-3 max-w-md text-sm text-muted-foreground">
-              One weekly email with the best new alternatives, deals and comparisons. No spam, ever.
+              {t("home.neverMiss.sub")}
             </p>
             <div className="relative mt-6">
               <NewsletterForm />

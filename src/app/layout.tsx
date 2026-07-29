@@ -5,6 +5,8 @@ import { Providers } from "@/components/layout/providers";
 import { JsonLd } from "@/components/seo/json-ld";
 import { RegisterSW } from "@/components/pwa/register-sw";
 import { websiteJsonLd, organizationJsonLd } from "@/lib/seo";
+import { getLocale } from "@/lib/i18n/server";
+import { getFlatDictionary } from "@/lib/i18n";
 import { SITE } from "@/lib/constants";
 import "./globals.css";
 
@@ -49,13 +51,15 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+  const dict = getFlatDictionary(locale);
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans antialiased`}>
         <JsonLd data={websiteJsonLd()} />
         <JsonLd data={organizationJsonLd()} />
-        <Providers>{children}</Providers>
+        <Providers locale={locale} dict={dict}>{children}</Providers>
         <RegisterSW />
       </body>
     </html>

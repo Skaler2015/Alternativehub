@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/misc";
 import { RatingStars } from "@/components/tools/rating-stars";
+import { useT } from "@/components/i18n/i18n-provider";
 import { cn, getInitials, timeAgo } from "@/lib/utils";
 
 type ReviewData = {
@@ -32,6 +33,7 @@ export function ReviewSection({
   currentUserId?: string | null;
 }) {
   const { status } = useSession();
+  const { t } = useT();
   const router = useRouter();
   const [rating, setRating] = React.useState(0);
   const [hover, setHover] = React.useState(0);
@@ -71,7 +73,7 @@ export function ReviewSection({
       return;
     }
     if (rating === 0) {
-      toast.error("Pick a star rating");
+      toast.error(t("reviews.pickRating"));
       return;
     }
     setSubmitting(true);
@@ -82,7 +84,7 @@ export function ReviewSection({
     });
     setSubmitting(false);
     if (res.ok) {
-      toast.success("Review published");
+      toast.success(t("reviews.published"));
       setFormOpen(false);
       setRating(0);
       setTitle("");
@@ -97,10 +99,10 @@ export function ReviewSection({
   return (
     <section id="reviews" className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">User Reviews ({reviews.length})</h2>
+        <h2 className="text-xl font-semibold">{t("reviews.title")} ({reviews.length})</h2>
         {!formOpen && (
           <Button variant="outline" size="sm" onClick={() => setFormOpen(true)}>
-            Write a review
+            {t("reviews.write")}
           </Button>
         )}
       </div>
@@ -129,23 +131,23 @@ export function ReviewSection({
             ))}
           </div>
           <Input
-            placeholder="Review title (optional)"
+            placeholder={t("reviews.titlePlaceholder")}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={120}
           />
           <Textarea
-            placeholder="What do you like or dislike? How does it compare to alternatives? (min. 20 characters)"
+            placeholder={t("reviews.bodyPlaceholder")}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={4}
           />
           <div className="flex gap-2">
             <Button onClick={submit} disabled={submitting || body.length < 20}>
-              {submitting ? "Publishing..." : "Publish review"}
+              {submitting ? t("reviews.publishing") : t("reviews.publish")}
             </Button>
             <Button variant="ghost" onClick={() => setFormOpen(false)}>
-              Cancel
+              {t("reviews.cancel")}
             </Button>
           </div>
         </div>
@@ -153,7 +155,7 @@ export function ReviewSection({
 
       {reviews.length === 0 ? (
         <p className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-          No reviews yet. Be the first to share your experience.
+          {t("reviews.empty")}
         </p>
       ) : (
         <div className="space-y-4">
@@ -197,12 +199,12 @@ export function ReviewSection({
                     )}
                   >
                     <ThumbsUp className={cn("size-3.5", hs.voted && "fill-current")} />
-                    Helpful{hs.count > 0 ? ` · ${hs.count}` : ""}
+                    {t("reviews.helpful")}{hs.count > 0 ? ` · ${hs.count}` : ""}
                   </button>
                 )}
                 {isOwn && hs.count > 0 && (
                   <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <ThumbsUp className="size-3.5" /> {hs.count} found this helpful
+                    <ThumbsUp className="size-3.5" /> {hs.count} {t("reviews.foundHelpful")}
                   </p>
                 )}
               </article>

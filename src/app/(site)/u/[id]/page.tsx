@@ -11,6 +11,7 @@ import { RatingStars } from "@/components/tools/rating-stars";
 import { prisma } from "@/lib/prisma";
 import { computeBadges, getUserStats } from "@/lib/community";
 import { buildMetadata } from "@/lib/seo";
+import { getT } from "@/lib/i18n/server";
 import { formatDate, getInitials, timeAgo, truncate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +41,7 @@ export default async function ProfilePage({ params }: { params: Params }) {
 
   if (!user || user.isBanned) notFound();
 
+  const { t } = await getT();
   const [stats, reviews, submissions] = await Promise.all([
     getUserStats(user.id),
     prisma.review.findMany({
@@ -63,7 +65,7 @@ export default async function ProfilePage({ params }: { params: Params }) {
       <Breadcrumbs
         items={[
           { name: "Home", path: "/" },
-          { name: "Leaderboard", path: "/leaderboard" },
+          { name: t("nav.leaderboard"), path: "/leaderboard" },
           { name: user.name ?? "Profile", path: `/u/${user.id}` },
         ]}
       />
@@ -81,11 +83,11 @@ export default async function ProfilePage({ params }: { params: Params }) {
           </div>
           {user.bio && <p className="mt-1 text-sm text-muted-foreground">{user.bio}</p>}
           <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground sm:justify-start">
-            <span className="font-semibold text-primary">{user.reputation} reputation</span>
-            <span>Joined {formatDate(user.createdAt)}</span>
+            <span className="font-semibold text-primary">{user.reputation} {t("profile.reputation")}</span>
+            <span>{t("profile.joined")} {formatDate(user.createdAt)}</span>
             {user.website && (
               <a href={user.website} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1 hover:text-foreground">
-                <Globe className="size-3" /> Website
+                <Globe className="size-3" /> {t("profile.website")}
               </a>
             )}
           </div>
@@ -95,9 +97,9 @@ export default async function ProfilePage({ params }: { params: Params }) {
       {/* Stats */}
       <div className="mt-6 grid grid-cols-3 gap-4">
         {[
-          { label: "Reviews", value: stats.reviews },
-          { label: "Submissions", value: stats.submissions },
-          { label: "Helpful votes", value: stats.helpfulReceived },
+          { label: t("profile.reviews"), value: stats.reviews },
+          { label: t("profile.submissions"), value: stats.submissions },
+          { label: t("profile.helpfulVotes"), value: stats.helpfulReceived },
         ].map((s) => (
           <div key={s.label} className="rounded-2xl border bg-card p-4 text-center">
             <p className="text-2xl font-bold">{s.value}</p>
@@ -109,7 +111,7 @@ export default async function ProfilePage({ params }: { params: Params }) {
       {/* Badges */}
       {badges.length > 0 && (
         <section className="mt-8">
-          <h2 className="mb-3 font-semibold">Badges</h2>
+          <h2 className="mb-3 font-semibold">{t("profile.badges")}</h2>
           <div className="flex flex-wrap gap-3">
             {badges.map((b) => {
               const Icon = ((Icons as unknown as Record<string, LucideIcon>)[b.icon]) || Icons.Award;
@@ -132,7 +134,7 @@ export default async function ProfilePage({ params }: { params: Params }) {
       {/* Submissions */}
       {submissions.length > 0 && (
         <section className="mt-8">
-          <h2 className="mb-3 font-semibold">Submitted Tools</h2>
+          <h2 className="mb-3 font-semibold">{t("profile.submittedTools")}</h2>
           <div className="flex flex-wrap gap-2">
             {submissions.map((t) => (
               <Link key={t.slug} href={`/tools/${t.slug}`} className="rounded-full border px-3 py-1.5 text-sm transition-colors hover:border-primary/40 hover:text-primary">
@@ -146,7 +148,7 @@ export default async function ProfilePage({ params }: { params: Params }) {
       {/* Reviews */}
       {reviews.length > 0 && (
         <section className="mt-8">
-          <h2 className="mb-3 font-semibold">Recent Reviews</h2>
+          <h2 className="mb-3 font-semibold">{t("profile.recentReviews")}</h2>
           <div className="space-y-4">
             {reviews.map((r) => (
               <article key={r.id} className="rounded-2xl border bg-card p-5">

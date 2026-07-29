@@ -4,19 +4,21 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/misc";
 import { RatingStars } from "@/components/tools/rating-stars";
 import { ToolLogo } from "@/components/tools/tool-logo";
+import { getT } from "@/lib/i18n/server";
 import { getInitials, truncate } from "@/lib/utils";
 import type { Testimonial } from "@/lib/data/queries";
 
-export function Testimonials({ items }: { items: Testimonial[] }) {
+export async function Testimonials({ items }: { items: Testimonial[] }) {
   if (items.length === 0) return null;
+  const { t: tr } = await getT();
 
   return (
     <FadeIn>
       <section className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="mb-5 text-center">
-          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Loved by the community</h2>
+          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{tr("testimonials.title")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Real reviews from people who found their next favorite tool
+            {tr("testimonials.sub")}
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -37,8 +39,8 @@ export function Testimonials({ items }: { items: Testimonial[] }) {
                   <AvatarFallback>{getInitials(t.user.name ?? "A")}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{t.user.name ?? "Anonymous"}</p>
-                  <p className="text-xs text-muted-foreground">reviewed a tool</p>
+                  <p className="truncate text-sm font-medium">{t.user.name ?? tr("testimonials.anonymous")}</p>
+                  <p className="text-xs text-muted-foreground">{tr("testimonials.reviewedTool")}</p>
                 </div>
                 <Link
                   href={`/tools/${t.tool.slug}`}

@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/input";
+import { useT } from "@/components/i18n/i18n-provider";
 import { cn, formatNumber } from "@/lib/utils";
 
 export function ToolActions({
@@ -47,6 +48,7 @@ export function ToolActions({
   voted?: "UP" | "DOWN" | null;
 }) {
   const { status } = useSession();
+  const { t } = useT();
   const router = useRouter();
   const [bookmarked, setBookmarked] = React.useState(initialBookmarked ?? false);
   const [voted, setVoted] = React.useState<"UP" | "DOWN" | null>(initialVoted ?? null);
@@ -158,28 +160,28 @@ export function ToolActions({
         className="gap-1.5"
       >
         {bookmarked ? <Check className="size-4" /> : <Bookmark className="size-4" />}
-        {bookmarked ? "Saved" : "Bookmark"}
+        {bookmarked ? t("tool.saved") : t("tool.bookmark")}
       </Button>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="gap-1.5">
-            <Share2 className="size-4" /> Share
+            <Share2 className="size-4" /> {t("tool.share")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={() => share("copy")}>
-            <Copy /> Copy link
+            <Copy /> {t("tool.copyLink")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => share("twitter")}>
-            <Twitter /> Share on X
+            <Twitter /> {t("tool.shareX")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() =>
               navigator.share?.({ title: name, url: window.location.href }).catch(() => {})
             }
           >
-            <Link2 /> More options
+            <Link2 /> {t("tool.moreOptions")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -190,7 +192,7 @@ export function ToolActions({
         className="gap-1.5 text-muted-foreground"
         onClick={() => setReportOpen(true)}
       >
-        <Flag className="size-4" /> Report
+        <Flag className="size-4" /> {t("tool.report")}
       </Button>
 
       <Dialog open={reportOpen} onOpenChange={setReportOpen}>

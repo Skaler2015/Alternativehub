@@ -10,6 +10,7 @@ import { TRENDING_SEARCHES } from "@/lib/constants";
 import { PRICING_LABELS } from "@/lib/constants";
 import type { SearchHit } from "@/lib/search";
 import { track } from "@/lib/analytics";
+import { useT } from "@/components/i18n/i18n-provider";
 import { cn } from "@/lib/utils";
 
 type SpeechRecognitionLike = {
@@ -30,6 +31,7 @@ export function SearchCommand({
   onOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
+  const { t } = useT();
   const [query, setQuery] = React.useState("");
   const [hits, setHits] = React.useState<SearchHit[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -140,7 +142,7 @@ export function SearchCommand({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Search apps, websites, AI tools, software..."
+            placeholder={t("search.placeholder")}
             className="h-13 w-full bg-transparent py-4 text-sm outline-none placeholder:text-muted-foreground"
           />
           <button
@@ -163,7 +165,7 @@ export function SearchCommand({
           {!query.trim() && (
             <div className="px-2 py-3">
               <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                <TrendingUp className="size-3.5" /> Trending searches
+                <TrendingUp className="size-3.5" /> {t("search.trending")}
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {TRENDING_SEARCHES.map((term) => (
@@ -207,7 +209,7 @@ export function SearchCommand({
 
           {query.trim() && !loading && hits.length === 0 && (
             <p className="px-3 py-8 text-center text-sm text-muted-foreground">
-              No results for &ldquo;{query}&rdquo;
+              {t("search.noResults")} &ldquo;{query}&rdquo;
             </p>
           )}
 
@@ -216,7 +218,7 @@ export function SearchCommand({
               onClick={() => go(`/search?q=${encodeURIComponent(query)}`)}
               className="mt-1 w-full rounded-xl border border-dashed px-3 py-2.5 text-center text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
             >
-              See all results for &ldquo;{query}&rdquo; →
+              {t("search.seeAll")} &ldquo;{query}&rdquo; →
             </button>
           )}
         </div>

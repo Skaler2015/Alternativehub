@@ -5,9 +5,11 @@ import { toast } from "sonner";
 import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useT } from "@/components/i18n/i18n-provider";
 import { cn } from "@/lib/utils";
 
 export function NewsletterForm({ compact = false }: { compact?: boolean }) {
+  const { t } = useT();
   const [email, setEmail] = React.useState("");
   const [loading, setLoading] = React.useState(false);
 
@@ -21,11 +23,11 @@ export function NewsletterForm({ compact = false }: { compact?: boolean }) {
     });
     setLoading(false);
     if (res.ok) {
-      toast.success("You're subscribed — welcome aboard!");
+      toast.success(t("newsletter.success"));
       setEmail("");
     } else {
       const data = await res.json().catch(() => null);
-      toast.error(data?.error ?? "Subscription failed");
+      toast.error(data?.error ?? t("newsletter.error"));
     }
   };
 
@@ -34,7 +36,7 @@ export function NewsletterForm({ compact = false }: { compact?: boolean }) {
       <Input
         type="email"
         required
-        placeholder="you@example.com"
+        placeholder={t("newsletter.placeholder")}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         aria-label="Email address"
@@ -42,7 +44,7 @@ export function NewsletterForm({ compact = false }: { compact?: boolean }) {
       />
       <Button type="submit" disabled={loading} variant={compact ? "default" : "gradient"}>
         <Mail className="size-4" />
-        {loading ? "..." : "Subscribe"}
+        {loading ? "..." : t("newsletter.cta")}
       </Button>
     </form>
   );
