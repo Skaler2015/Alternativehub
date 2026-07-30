@@ -54,6 +54,53 @@ export const trackEventSchema = z.object({
   query: z.string().max(200).optional(),
 });
 
+const PRICING = ["FREE", "FREEMIUM", "PAID", "SUBSCRIPTION", "ONE_TIME", "OPEN_SOURCE", "CONTACT"] as const;
+
+/** Create/edit a tool from the admin panel. */
+export const toolWriteSchema = z.object({
+  name: z.string().trim().min(2, "Name is required").max(120),
+  slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase words separated by hyphens").max(120),
+  tagline: z.string().trim().max(160).optional().or(z.literal("")),
+  description: z.string().trim().min(20, "Description must be at least 20 characters").max(6000),
+  websiteUrl: z.string().url("Enter a valid website URL").max(500),
+  affiliateUrl: z.string().url().max(500).optional().or(z.literal("")),
+  downloadUrl: z.string().url().max(500).optional().or(z.literal("")),
+  logoUrl: z.string().url().max(500).optional().or(z.literal("")),
+  categoryId: z.string().min(1, "Pick a category"),
+  pricingModel: z.enum(PRICING),
+  tier: z.enum(["STANDARD", "PREMIUM", "SPONSORED"]).optional(),
+  status: z.enum(["DRAFT", "PENDING", "PUBLISHED", "REJECTED", "ARCHIVED"]).optional(),
+  featured: z.boolean().optional(),
+  verified: z.boolean().optional(),
+  isOpenSource: z.boolean().optional(),
+  launchYear: z.number().int().min(1970).max(2100).optional().nullable(),
+  pros: z.array(z.string().max(200)).max(20).optional(),
+  cons: z.array(z.string().max(200)).max(20).optional(),
+  bestFor: z.array(z.string().max(120)).max(20).optional(),
+  tags: z.array(z.string().max(60)).max(30).optional(),
+  seoTitle: z.string().max(160).optional().or(z.literal("")),
+  seoDesc: z.string().max(320).optional().or(z.literal("")),
+});
+
+/** Create/edit a blog post from the admin panel. */
+export const blogWriteSchema = z.object({
+  title: z.string().trim().min(3, "Title is required").max(200),
+  slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase words separated by hyphens").max(200),
+  excerpt: z.string().trim().min(10, "Write a short excerpt").max(500),
+  content: z.string().trim().min(20, "Content is too short"),
+  coverUrl: z.string().url().max(500).optional().or(z.literal("")),
+  category: z.enum(["NEWS", "TOP_LISTS", "COMPARISONS", "BUYING_GUIDES", "TUTORIALS"]),
+  published: z.boolean().optional(),
+  seoTitle: z.string().max(160).optional().or(z.literal("")),
+  seoDesc: z.string().max(320).optional().or(z.literal("")),
+  keywords: z.array(z.string().max(60)).max(30).optional(),
+});
+
+/** Admin ops / automation triggers. */
+export const opsActionSchema = z.object({
+  action: z.enum(["recompute-scores", "enrich-batch", "check-links", "recompute-reputation", "send-digest", "detect-alternatives"]),
+});
+
 export const contactSchema = z.object({
   name: z.string().trim().min(2, "Please enter your name").max(80),
   email: z.string().trim().email("Enter a valid email address").max(160),

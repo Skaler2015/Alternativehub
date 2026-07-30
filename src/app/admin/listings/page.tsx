@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { Plus, Search, Pencil } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ToolLogo } from "@/components/tools/tool-logo";
 import { ToolModerationActions } from "@/components/admin/tool-moderation-actions";
 import { cn, timeAgo } from "@/lib/utils";
-import type { ToolStatus } from "@prisma/client";
+import type { Prisma, ToolStatus } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -13,18 +15,24 @@ const STATUSES = ["ALL", "PENDING", "PUBLISHED", "REJECTED", "ARCHIVED", "DELETE
 export default async function AdminListingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; page?: string }>;
+  searchParams: Promise<{ status?: string; page?: string; q?: string }>;
 }) {
-  const { status = "ALL", page: pageParam } = await searchParams;
+  const { status = "ALL", page: pageParam, q } = await searchParams;
   const page = Number(pageParam) || 1;
   const pageSize = 30;
+  const query = (q ?? "").trim();
 
-  const where =
+  const searchWhere: Prisma.ToolWhereInput = query
+    ? { OR: [{ name: { contains: query, mode: "insensitive" } }, { slug: { contains: query, mode: "insensitive" } }] }
+    : {};
+
+  const where: Prisma.ToolWhereInput =
     status === "DELETED"
-      ? { deletedAt: { not: null } }
+      ? { deletedAt: { not: null }, ...searchWhere }
       : {
           deletedAt: null,
           ...(status !== "ALL" ? { status: status as ToolStatus } : {}),
+          ...searchWhere,
         };
 
   const [tools, total] = await Promise.all([
@@ -43,10 +51,34 @@ export default async function AdminListingsPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Listings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{total} listings</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Listings</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{total} listings{query ? ` matching “${query}”` : ""}</p>
+        </div>
+        <Button asChild size="sm">
+          <Link href="/admin/tools/new"><Plus className="size-4" /> Add tool</Link>
+        </Button>
       </div>
+
+      <form method="get" className="flex items-center gap-2">
+        {status !== "ALL" && <input type="hidden" name="status" value={status} />}
+        <div className="flex flex-1 items-center gap-2 rounded-lg border bg-background px-3">
+          <Search className="size-4 text-muted-foreground" />
+          <input
+            name="q"
+            defaultValue={query}
+            placeholder="Search tools by name or slug…"
+            className="h-9 w-full bg-transparent text-sm outline-none"
+          />
+        </div>
+        <Button type="submit" variant="outline" size="sm">Search</Button>
+        {query && (
+          <Button asChild variant="ghost" size="sm">
+            <Link href={`/admin/listings${status === "ALL" ? "" : `?status=${status}`}`}>Clear</Link>
+          </Button>
+        )}
+      </form>
 
       <div className="flex flex-wrap gap-2">
         {STATUSES.map((s) => (
@@ -97,12 +129,17 @@ export default async function AdminListingsPage({
                 {tool.submittedBy?.name && ` by ${tool.submittedBy.name}`}
               </p>
             </div>
-            <ToolModerationActions
-              toolId={tool.id}
-              status={tool.status}
-              featured={tool.featured}
-              deleted={Boolean(tool.deletedAt)}
-            />
+            <div className="flex items-center gap-2">
+              <Button asChild variant="outline" size="sm" className="gap-1">
+                <Link href={`/admin/tools/${tool.id}/edit`}><Pencil className="size-3.5" /> Edit</Link>
+              </Button>
+              <ToolModerationActions
+                toolId={tool.id}
+                status={tool.status}
+                featured={tool.featured}
+                deleted={Boolean(tool.deletedAt)}
+              />
+            </div>
           </div>
         ))}
       </div>
@@ -112,7 +149,7 @@ export default async function AdminListingsPage({
           {page > 1 && (
             <Link
               className="text-primary hover:underline"
-              href={`/admin/listings?status=${status}&page=${page - 1}`}
+              href={`/admin/listings?status=${status}&page=${page - 1}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
             >
               ← Previous
             </Link>
@@ -120,7 +157,7 @@ export default async function AdminListingsPage({
           {page * pageSize < total && (
             <Link
               className="text-primary hover:underline"
-              href={`/admin/listings?status=${status}&page=${page + 1}`}
+              href={`/admin/listings?status=${status}&page=${page + 1}${query ? `&q=${encodeURIComponent(query)}` : ""}`}
             >
               Next →
             </Link>

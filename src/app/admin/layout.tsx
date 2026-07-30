@@ -1,12 +1,16 @@
 import Link from "next/link";
 import {
   BarChart3,
+  Cpu,
+  FileText,
   FileUp,
   Flag,
+  History,
   LayoutDashboard,
   ListChecks,
   Mail,
   MessageSquare,
+  Send,
   Users,
 } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
@@ -17,11 +21,15 @@ const LINKS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/listings", label: "Listings", icon: ListChecks },
+  { href: "/admin/blog", label: "Blog", icon: FileText },
   { href: "/admin/reviews", label: "Reviews", icon: MessageSquare },
   { href: "/admin/reports", label: "Reports", icon: Flag },
   { href: "/admin/messages", label: "Messages", icon: Mail },
+  { href: "/admin/newsletter", label: "Newsletter", icon: Send },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/import", label: "Bulk Import", icon: FileUp },
+  { href: "/admin/ops", label: "Automation", icon: Cpu },
+  { href: "/admin/activity", label: "Activity", icon: History },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
