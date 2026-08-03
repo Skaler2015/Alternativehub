@@ -5,6 +5,7 @@ import { opsActionSchema } from "@/lib/validations";
 import { recomputeToolScores, checkBrokenLinks, detectAlternatives, enrichTool } from "@/lib/automation";
 import { recomputeAllReputations } from "@/lib/community";
 import { aiEnabled } from "@/lib/ai";
+import { generateAndPublishTools } from "@/lib/generate-tools";
 import { emailEnabled, sendWeeklyDigest } from "@/lib/email";
 import { invalidate, invalidatePrefix, CACHE_KEYS } from "@/lib/cache";
 
@@ -59,6 +60,10 @@ export async function POST(req: Request) {
       case "send-digest":
         if (!emailEnabled()) return NextResponse.json({ error: "Email not configured (set RESEND_API_KEY)" }, { status: 400 });
         result.sent = await sendWeeklyDigest();
+        break;
+      case "generate-tools":
+        if (!aiEnabled()) return NextResponse.json({ error: "No AI provider configured (set GEMINI_API_KEY)" }, { status: 400 });
+        result.count = await generateAndPublishTools();
         break;
     }
   } catch (err) {

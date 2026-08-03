@@ -1,4 +1,4 @@
-import { Cpu, RefreshCw, Link2, Sparkles, Users, Wand2 } from "lucide-react";
+import { Cpu, RefreshCw, Link2, Sparkles, Users, Wand2, PackagePlus } from "lucide-react";
 import { OpsButton } from "@/components/admin/ops-button";
 import { aiEnabled } from "@/lib/ai";
 import { emailEnabled } from "@/lib/email";
@@ -52,6 +52,21 @@ export default function AdminOpsPage() {
             </div>
           </div>
           {ai ? <OpsButton action="enrich-batch" label="Run" /> : <span className="text-xs text-muted-foreground">Disabled</span>}
+        </div>
+
+        {/* AI daily generation */}
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex size-9 items-center justify-center rounded-xl bg-primary/15 text-primary"><PackagePlus className="size-4" /></span>
+            <div>
+              <p className="text-sm font-medium">Generate new tools (AI)</p>
+              <p className="text-xs text-muted-foreground">
+                Discover &amp; publish up to 100 new, de-duplicated tools. Runs automatically daily at 4:00 UTC.
+                {!ai && <span className="text-warning"> Requires GEMINI_API_KEY.</span>}
+              </p>
+            </div>
+          </div>
+          {ai ? <OpsButton action="generate-tools" label="Generate now" confirmText="Generate up to 100 new tools now? This may take up to a minute." /> : <span className="text-xs text-muted-foreground">Disabled</span>}
         </div>
       </div>
 

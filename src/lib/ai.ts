@@ -182,6 +182,15 @@ export function aiEnabled(): boolean {
   return pickProvider() !== null;
 }
 
+/** Generic JSON generation for callers outside this module (e.g. bulk tool generation). */
+export async function aiJson<T>(
+  system: string,
+  prompt: string,
+  schema: Record<string, unknown>,
+): Promise<T | null> {
+  return generateJson<T>(system, prompt, schema);
+}
+
 // ── Public API ──────────────────────────────────────────────────────────
 
 export type GeneratedToolContent = {

@@ -4,6 +4,7 @@
   "buildCommand": "prisma generate && prisma migrate deploy && tsx scripts/seed-if-empty.ts && tsx scripts/backfill-details.ts && tsx scripts/expand-catalog.ts && tsx scripts/expand-catalog-2.ts && tsx scripts/expand-catalog-3.ts && next build",
   "installCommand": "npm ci",
   "crons": [
-    { "path": "/api/cron/maintenance", "schedule": "0 2 * * *" }
+    { "path": "/api/cron/maintenance", "schedule": "0 2 * * *" },
+    { "path": "/api/cron/generate-tools", "schedule": "0 4 * * *" }
   ]
 }

@@ -98,7 +98,7 @@ export const blogWriteSchema = z.object({
 
 /** Admin ops / automation triggers. */
 export const opsActionSchema = z.object({
-  action: z.enum(["recompute-scores", "enrich-batch", "check-links", "recompute-reputation", "send-digest", "detect-alternatives"]),
+  action: z.enum(["recompute-scores", "enrich-batch", "check-links", "recompute-reputation", "send-digest", "detect-alternatives", "generate-tools"]),
 });
 
 export const contactSchema = z.object({
