@@ -4,6 +4,7 @@ import { Building2, BadgeCheck, Clock, ExternalLink, Eye } from "lucide-react";
 import { requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { CompanyEditForm } from "@/components/company/company-edit-form";
+import { MiniBarChart } from "@/components/admin/mini-bar-chart";
 import { formatNumber } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +47,25 @@ export default async function CompanyDashboardPage() {
   const totalViews = company.tools.reduce((s, t) => s + t.viewCount, 0);
   const totalReviews = company.tools.reduce((s, t) => s + t.reviewCount, 0);
 
+  // ── 30-day analytics for this company's tools ──
+  const toolIds = company.tools.map((t) => t.id);
+  const since = new Date(Date.now() - 30 * 86_400_000);
+  const [recentViews, clickOuts, events] = toolIds.length
+    ? await Promise.all([
+        prisma.analyticsEvent.count({ where: { type: "TOOL_VIEW", toolId: { in: toolIds }, createdAt: { gte: since } } }).catch(() => 0),
+        prisma.analyticsEvent.count({ where: { type: { in: ["CLICK_OUT", "AFFILIATE_CLICK"] }, toolId: { in: toolIds }, createdAt: { gte: since } } }).catch(() => 0),
+        prisma.analyticsEvent.findMany({ where: { type: "TOOL_VIEW", toolId: { in: toolIds }, createdAt: { gte: since } }, select: { createdAt: true }, take: 20000 }).catch(() => []),
+      ])
+    : [0, 0, [] as { createdAt: Date }[]];
+
+  const buckets = new Map<string, number>();
+  for (let i = 29; i >= 0; i--) buckets.set(new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10), 0);
+  for (const e of events) {
+    const k = e.createdAt.toISOString().slice(0, 10);
+    if (buckets.has(k)) buckets.set(k, (buckets.get(k) ?? 0) + 1);
+  }
+  const timeseries = [...buckets.entries()].map(([date, views]) => ({ date, views }));
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -77,6 +97,19 @@ export default async function CompanyDashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* Insights (last 30 days) */}
+      <section className="rounded-2xl border bg-card p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold">Insights — last 30 days</h2>
+          <div className="flex gap-4 text-xs text-muted-foreground">
+            <span><b className="text-foreground">{formatNumber(recentViews)}</b> views</span>
+            <span><b className="text-foreground">{formatNumber(clickOuts)}</b> website clicks</span>
+            <span><b className="text-foreground">{recentViews ? Math.round((clickOuts / recentViews) * 100) : 0}%</b> CTR</span>
+          </div>
+        </div>
+        <MiniBarChart data={timeseries} />
+      </section>
 
       {/* Tools */}
       {company.tools.length > 0 && (

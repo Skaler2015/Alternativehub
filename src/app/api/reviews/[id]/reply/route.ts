@@ -6,19 +6,22 @@ import { notify } from "@/lib/notifications";
 
 type Params = Promise<{ id: string }>;
 
-/** Post/update an official reply to a review. Admin/moderator only. */
+/** Post/update an official reply to a review. Admin/moderator or the claimed company owner. */
 export async function POST(req: Request, { params }: { params: Params }) {
   const user = await getApiUser();
-  if (!user || !hasPermission(user.role, "review.moderate")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  if (!user) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
 
   const { id } = await params;
   const review = await prisma.review.findUnique({
     where: { id },
-    select: { id: true, userId: true, tool: { select: { name: true, slug: true } } },
+    select: { id: true, userId: true, tool: { select: { name: true, slug: true, company: { select: { claimedById: true } } } } },
   });
   if (!review) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const isOwner = !!review.tool.company?.claimedById && review.tool.company.claimedById === user.id;
+  if (!hasPermission(user.role, "review.moderate") && !isOwner) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const body = await req.json().catch(() => null);
   const parsed = reviewReplySchema.safeParse(body);

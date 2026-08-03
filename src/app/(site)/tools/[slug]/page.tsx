@@ -73,7 +73,10 @@ export default async function ToolPage({ params }: { params: Params }) {
 
   const session = await auth();
   const { t } = await getT();
-  const isStaff = session?.user?.role === "ADMIN" || session?.user?.role === "MODERATOR";
+  const isStaff =
+    session?.user?.role === "ADMIN" ||
+    session?.user?.role === "MODERATOR" ||
+    (!!session?.user && !!tool.company?.claimedById && session.user.id === tool.company.claimedById);
   const [reviews, breakdown, similar, userState] = await Promise.all([
     getToolReviews(tool.id),
     getRatingBreakdown(tool.id),

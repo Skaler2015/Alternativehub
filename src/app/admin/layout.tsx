@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   BarChart3,
+  Building2,
   Cpu,
   FileText,
   FileUp,
@@ -24,6 +25,7 @@ const LINKS = [
   { href: "/admin/blog", label: "Blog", icon: FileText },
   { href: "/admin/reviews", label: "Reviews", icon: MessageSquare },
   { href: "/admin/reports", label: "Reports", icon: Flag },
+  { href: "/admin/claims", label: "Claims", icon: Building2 },
   { href: "/admin/messages", label: "Messages", icon: Mail },
   { href: "/admin/newsletter", label: "Newsletter", icon: Send },
   { href: "/admin/users", label: "Users", icon: Users },
