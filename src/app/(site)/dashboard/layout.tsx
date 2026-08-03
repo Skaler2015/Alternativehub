@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { Bookmark, FolderOpen, History, LayoutDashboard, Settings, Star } from "lucide-react";
+import { Bell, Bookmark, Building2, FolderOpen, History, LayoutDashboard, Settings, Star } from "lucide-react";
 
 const LINKS = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/bookmarks", label: "Bookmarks", icon: Bookmark },
   { href: "/dashboard/collections", label: "Collections", icon: FolderOpen },
   { href: "/dashboard/reviews", label: "My Reviews", icon: Star },
+  { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
+  { href: "/dashboard/company", label: "Company", icon: Building2 },
   { href: "/dashboard/history", label: "Recently Viewed", icon: History },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];

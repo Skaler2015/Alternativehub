@@ -153,9 +153,9 @@ export default async function ToolPage({ params }: { params: Params }) {
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
               <RatingStars rating={tool.rating} showValue reviewCount={tool.reviewCount} />
               {tool.company && (
-                <span className="inline-flex items-center gap-1">
+                <Link href={`/companies/${tool.company.slug}`} className="inline-flex items-center gap-1 hover:text-foreground">
                   <Building2 className="size-3.5" /> {tool.company.name}
-                </span>
+                </Link>
               )}
               <span className="inline-flex items-center gap-1">
                 <Users className="size-3.5" /> {formatNumber(tool.viewCount)} views
@@ -425,7 +425,9 @@ export default async function ToolPage({ params }: { params: Params }) {
               {tool.company && (
                 <div className="flex justify-between gap-2">
                   <dt className="text-muted-foreground">Developer</dt>
-                  <dd className="font-medium text-right">{tool.company.name}</dd>
+                  <dd className="font-medium text-right">
+                    <Link href={`/companies/${tool.company.slug}`} className="hover:text-primary">{tool.company.name}</Link>
+                  </dd>
                 </div>
               )}
               {tool.launchYear && (

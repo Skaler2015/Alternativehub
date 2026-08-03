@@ -16,6 +16,7 @@ export async function Footer() {
         { labelKey: "footer.categories", href: "/categories" },
         { labelKey: "footer.comparisons", href: "/compare" },
         { labelKey: "nav.collections", href: "/collections" },
+        { label: "Companies", href: "/companies" },
         { labelKey: "footer.aiTools", href: "/categories/ai-tools" },
         { labelKey: "footer.openSource", href: "/tools?pricing=OPEN_SOURCE" },
       ],

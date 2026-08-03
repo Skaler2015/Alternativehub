@@ -108,6 +108,18 @@ export const opsActionSchema = z.object({
   action: z.enum(["recompute-scores", "enrich-batch", "check-links", "recompute-reputation", "send-digest", "detect-alternatives", "generate-tools"]),
 });
 
+export const companyEditSchema = z.object({
+  name: z.string().trim().min(2, "Name is required").max(120),
+  description: z.string().trim().max(2000).optional().or(z.literal("")),
+  websiteUrl: z.string().url().max(500).optional().or(z.literal("")),
+  logoUrl: z.string().url().max(500).optional().or(z.literal("")),
+  country: z.string().trim().max(60).optional().or(z.literal("")),
+  foundedYear: z.number().int().min(1800).max(2100).optional().nullable(),
+  founder: z.string().trim().max(160).optional().or(z.literal("")),
+  employees: z.string().trim().max(40).optional().or(z.literal("")),
+  funding: z.string().trim().max(60).optional().or(z.literal("")),
+});
+
 export const collectionSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(80),
   description: z.string().trim().max(500).optional().or(z.literal("")),

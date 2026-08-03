@@ -121,6 +121,8 @@ model User {
   reviewVotes     ReviewVote[]
   following       Follow[]         @relation("Follower")
   followers       Follow[]         @relation("Following")
+  companyFollows  CompanyFollow[]
+  claimedCompanies Company[]       @relation("ClaimedCompanies")
   votes           Vote[]
   bookmarks       Bookmark[]
   collections     Collection[]
@@ -186,9 +188,31 @@ model Company {
   founder     String?
   employees   String?
   funding     String?
+
+  // Ownership / claim
+  claimedById   String?
+  claimVerified Boolean   @default(false)
+  claimedAt     DateTime?
+
   createdAt   DateTime @default(now())
 
-  tools Tool[]
+  tools     Tool[]
+  claimedBy User?           @relation("ClaimedCompanies", fields: [claimedById], references: [id], onDelete: SetNull)
+  followers CompanyFollow[]
+
+  @@index([claimedById])
+}
+
+model CompanyFollow {
+  userId    String
+  companyId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([userId, companyId])
+  @@index([companyId])
 }
 
 model Category {
