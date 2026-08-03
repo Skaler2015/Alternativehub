@@ -42,3 +42,19 @@ export const PRICING_LABELS: Record<string, string> = {
 };
 
 export const PAGE_SIZE = 24;
+
+export const PLATFORM_OPTIONS: { slug: string; label: string }[] = [
+  { slug: "web", label: "Web" },
+  { slug: "windows", label: "Windows" },
+  { slug: "macos", label: "macOS" },
+  { slug: "linux", label: "Linux" },
+  { slug: "ios", label: "iOS" },
+  { slug: "android", label: "Android" },
+  { slug: "chrome", label: "Chrome" },
+  { slug: "firefox", label: "Firefox" },
+  { slug: "cli", label: "CLI" },
+  { slug: "api", label: "API" },
+  { slug: "self-hosted", label: "Self-hosted" },
+];
+
+export const FILTER_PRICING = ["FREE", "FREEMIUM", "OPEN_SOURCE", "PAID", "SUBSCRIPTION"] as const;

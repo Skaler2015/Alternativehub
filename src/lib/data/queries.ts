@@ -218,6 +218,11 @@ export async function getCategoryBySlug(slug: string) {
 export type ToolListParams = {
   categorySlug?: string;
   pricing?: string;
+  platform?: string;
+  q?: string;
+  openSource?: boolean;
+  verified?: boolean;
+  freeTrial?: boolean;
   sort?: string;
   page?: number;
   pageSize?: number;
@@ -227,10 +232,24 @@ export async function listTools(params: ToolListParams) {
   const pageSize = params.pageSize ?? 24;
   const page = Math.max(1, params.page ?? 1);
 
+  const q = params.q?.trim();
   const where: Prisma.ToolWhereInput = {
     ...PUBLISHED,
     ...(params.categorySlug ? { category: { slug: params.categorySlug } } : {}),
     ...(params.pricing ? { pricingModel: params.pricing as never } : {}),
+    ...(params.platform ? { platforms: { some: { platform: { slug: params.platform } } } } : {}),
+    ...(params.openSource ? { isOpenSource: true } : {}),
+    ...(params.verified ? { verified: true } : {}),
+    ...(params.freeTrial ? { hasFreeTrial: true } : {}),
+    ...(q
+      ? {
+          OR: [
+            { name: { contains: q, mode: "insensitive" } },
+            { tagline: { contains: q, mode: "insensitive" } },
+            { tags: { some: { tag: { name: { contains: q, mode: "insensitive" } } } } },
+          ],
+        }
+      : {}),
   };
 
   const orderBy: Prisma.ToolOrderByWithRelationInput[] =
