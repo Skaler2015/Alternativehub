@@ -4,6 +4,7 @@ import { getApiUser, hasPermission, logActivity } from "@/lib/authz";
 import { adminToolUpdateSchema, toolWriteSchema } from "@/lib/validations";
 import { enrichTool } from "@/lib/automation";
 import { syncTags } from "@/lib/admin-tools";
+import { notifyToolStatus } from "@/lib/notifications";
 import { invalidate, invalidatePrefix, CACHE_KEYS } from "@/lib/cache";
 
 type Params = Promise<{ id: string }>;
@@ -96,9 +97,11 @@ export async function PATCH(req: Request, { params }: { params: Params }) {
       });
       // AI enrichment on approval (best-effort, don't block the response for long)
       enrichTool(id).catch(() => {});
+      void notifyToolStatus(id, true);
       break;
     case "reject":
       await prisma.tool.update({ where: { id }, data: { status: "REJECTED" } });
+      void notifyToolStatus(id, false);
       break;
     case "feature":
       await prisma.tool.update({ where: { id }, data: { featured: true } });

@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
 import { SearchCommand } from "@/components/search/search-command";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { useT } from "@/components/i18n/i18n-provider";
 import { Button } from "@/components/ui/button";
 import type { TranslationKey } from "@/lib/i18n";
@@ -77,6 +78,7 @@ export function Navbar() {
               </Link>
             </Button>
 
+            <NotificationBell />
             <LanguageSwitcher />
             <ThemeToggle />
             <UserMenu />

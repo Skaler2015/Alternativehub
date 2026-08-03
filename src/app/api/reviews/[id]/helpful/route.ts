@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getApiUser } from "@/lib/authz";
 import { rateLimit } from "@/lib/rate-limit";
 import { recomputeUserReputation } from "@/lib/community";
+import { notify } from "@/lib/notifications";
 
 type Params = Promise<{ id: string }>;
 
@@ -15,7 +16,10 @@ export async function POST(_req: Request, { params }: { params: Params }) {
   if (!rl.success) return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
 
   const { id } = await params;
-  const review = await prisma.review.findUnique({ where: { id }, select: { id: true, userId: true } });
+  const review = await prisma.review.findUnique({
+    where: { id },
+    select: { id: true, userId: true, tool: { select: { name: true, slug: true } } },
+  });
   if (!review) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (review.userId === user.id) {
     return NextResponse.json({ error: "You can't vote on your own review" }, { status: 400 });
@@ -38,6 +42,17 @@ export async function POST(_req: Request, { params }: { params: Params }) {
   const helpful = await prisma.reviewVote.count({ where: { reviewId: id, type: "UP" } });
   await prisma.review.update({ where: { id }, data: { helpful } });
   await recomputeUserReputation(review.userId).catch(() => {});
+
+  // Notify the author on helpful-vote milestones (avoids per-vote spam).
+  if (voted && [1, 5, 10, 25, 50, 100].includes(helpful)) {
+    void notify({
+      userId: review.userId,
+      type: "REVIEW_VOTE",
+      title: helpful === 1 ? "Someone found your review helpful 👍" : `Your review reached ${helpful} helpful votes 🎉`,
+      body: `Your review of ${review.tool.name} is helping others decide.`,
+      link: `/tools/${review.tool.slug}#reviews`,
+    });
+  }
 
   return NextResponse.json({ ok: true, voted, helpful });
 }
