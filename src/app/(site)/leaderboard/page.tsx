@@ -6,7 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/misc";
 import { prisma } from "@/lib/prisma";
 import { buildMetadata } from "@/lib/seo";
 import { getT } from "@/lib/i18n/server";
-import { getInitials } from "@/lib/utils";
+import { computeLevel, getPeriodLeaderboard, type LeaderRow } from "@/lib/community";
+import { cn, getInitials } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -18,24 +19,36 @@ export const metadata: Metadata = buildMetadata({
 });
 
 const MEDALS = ["🥇", "🥈", "🥉"];
+const PERIODS = [
+  { key: "all", label: "All-time" },
+  { key: "month", label: "This month" },
+  { key: "week", label: "This week" },
+] as const;
 
-export default async function LeaderboardPage() {
+type Period = (typeof PERIODS)[number]["key"];
+
+export default async function LeaderboardPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   const { t } = await getT();
-  const users = await prisma.user
-    .findMany({
-      where: { isBanned: false, reputation: { gt: 0 } },
-      orderBy: { reputation: "desc" },
-      take: 50,
-      select: {
-        id: true,
-        name: true,
-        image: true,
-        reputation: true,
-        role: true,
-        _count: { select: { reviews: true, submittedTools: true } },
-      },
-    })
-    .catch(() => []);
+  const { period: periodParam } = await searchParams;
+  const period: Period = (["all", "month", "week"] as const).includes(periodParam as Period) ? (periodParam as Period) : "all";
+
+  let rows: LeaderRow[] = [];
+  if (period === "all") {
+    const users = await prisma.user
+      .findMany({
+        where: { isBanned: false, reputation: { gt: 0 } },
+        orderBy: { reputation: "desc" },
+        take: 50,
+        select: { id: true, name: true, image: true, reputation: true, _count: { select: { reviews: true, submittedTools: true } } },
+      })
+      .catch(() => []);
+    rows = users.map((u) => ({
+      id: u.id, name: u.name, image: u.image, reputation: u.reputation, score: u.reputation,
+      reviews: u._count.reviews, submissions: u._count.submittedTools,
+    }));
+  } else {
+    rows = await getPeriodLeaderboard(period).catch(() => []);
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
@@ -51,36 +64,54 @@ export default async function LeaderboardPage() {
         </div>
       </div>
 
-      {users.length === 0 ? (
-        <p className="mt-16 rounded-2xl border border-dashed p-12 text-center text-sm text-muted-foreground">
-          {t("leaderboard.empty")}
+      {/* Period tabs */}
+      <div className="mt-6 inline-flex rounded-lg border p-1">
+        {PERIODS.map((p) => (
+          <Link
+            key={p.key}
+            href={p.key === "all" ? "/leaderboard" : `/leaderboard?period=${p.key}`}
+            className={cn(
+              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+              period === p.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {p.label}
+          </Link>
+        ))}
+      </div>
+
+      {rows.length === 0 ? (
+        <p className="mt-8 rounded-2xl border border-dashed p-12 text-center text-sm text-muted-foreground">
+          {period === "all" ? t("leaderboard.empty") : "No activity in this period yet — be the first!"}
         </p>
       ) : (
-        <div className="mt-8 divide-y rounded-2xl border bg-card">
-          {users.map((u, i) => (
-            <Link
-              key={u.id}
-              href={`/u/${u.id}`}
-              className="flex items-center gap-4 p-4 transition-colors hover:bg-accent"
-            >
-              <span className="w-7 shrink-0 text-center text-lg font-bold">
-                {i < 3 ? MEDALS[i] : <span className="text-sm text-muted-foreground">{i + 1}</span>}
-              </span>
-              <Avatar>
-                <AvatarImage src={u.image ?? undefined} />
-                <AvatarFallback>{getInitials(u.name ?? "A")}</AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{u.name ?? "Anonymous"}</p>
-                <p className="text-xs text-muted-foreground">
-                  {u._count.reviews} {t("leaderboard.reviews")} · {u._count.submittedTools} {t("leaderboard.submissions")}
-                </p>
-              </div>
-              <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
-                {u.reputation} {t("leaderboard.points")}
-              </span>
-            </Link>
-          ))}
+        <div className="mt-6 divide-y rounded-2xl border bg-card">
+          {rows.map((u, i) => {
+            const level = computeLevel(u.reputation);
+            return (
+              <Link key={u.id} href={`/u/${u.id}`} className="flex items-center gap-4 p-4 transition-colors hover:bg-accent">
+                <span className="w-7 shrink-0 text-center text-lg font-bold">
+                  {i < 3 ? MEDALS[i] : <span className="text-sm text-muted-foreground">{i + 1}</span>}
+                </span>
+                <Avatar>
+                  <AvatarImage src={u.image ?? undefined} />
+                  <AvatarFallback>{getInitials(u.name ?? "A")}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-1.5 truncate font-medium">
+                    {u.name ?? "Anonymous"}
+                    <span className={cn("text-[11px] font-semibold", level.color)}>· {level.name}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {u.reviews} {t("leaderboard.reviews")} · {u.submissions} {t("leaderboard.submissions")}
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+                  {period === "all" ? `${u.reputation} ${t("leaderboard.points")}` : `+${u.score}`}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

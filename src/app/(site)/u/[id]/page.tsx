@@ -11,7 +11,7 @@ import { RatingStars } from "@/components/tools/rating-stars";
 import { FollowButton } from "@/components/social/follow-button";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { computeBadges, getUserStats } from "@/lib/community";
+import { computeAchievements, computeLevel, getUserStats } from "@/lib/community";
 import { buildMetadata } from "@/lib/seo";
 import { getT } from "@/lib/i18n/server";
 import { formatDate, getInitials, timeAgo, truncate } from "@/lib/utils";
@@ -75,7 +75,8 @@ export default async function ProfilePage({ params }: { params: Params }) {
       : Promise.resolve(false),
   ]);
 
-  const badges = computeBadges(stats, user.reputation);
+  const achievements = computeAchievements(stats, user.reputation);
+  const level = computeLevel(user.reputation);
   const isSelf = session?.user?.id === user.id;
 
   return (
@@ -97,6 +98,9 @@ export default async function ProfilePage({ params }: { params: Params }) {
         <div className="flex-1">
           <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
             <h1 className="text-2xl font-bold tracking-tight">{user.name ?? "Anonymous"}</h1>
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${level.color}`}>
+              <Icons.Gem className="size-3" /> {level.name}
+            </span>
             {user.role !== "USER" && <Badge variant="gradient">{user.role.toLowerCase()}</Badge>}
           </div>
           {user.bio && <p className="mt-1 text-sm text-muted-foreground">{user.bio}</p>}
@@ -111,6 +115,17 @@ export default async function ProfilePage({ params }: { params: Params }) {
               </a>
             )}
           </div>
+          {level.next !== null && (
+            <div className="mt-3 max-w-xs">
+              <div className="mb-1 flex justify-between text-[11px] text-muted-foreground">
+                <span>{level.name}</span>
+                <span>{level.next - user.reputation} to next level</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500" style={{ width: `${level.progress}%` }} />
+              </div>
+            </div>
+          )}
         </div>
         {!isSelf && (
           <div className="shrink-0">
@@ -133,28 +148,35 @@ export default async function ProfilePage({ params }: { params: Params }) {
         ))}
       </div>
 
-      {/* Badges */}
-      {badges.length > 0 && (
-        <section className="mt-8">
-          <h2 className="mb-3 font-semibold">{t("profile.badges")}</h2>
-          <div className="flex flex-wrap gap-3">
-            {badges.map((b) => {
-              const Icon = ((Icons as unknown as Record<string, LucideIcon>)[b.icon]) || Icons.Award;
-              return (
-                <div key={b.key} className="flex items-center gap-2.5 rounded-2xl border bg-card p-3" title={b.description}>
-                  <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/15 to-violet-500/15 text-primary">
-                    <Icon className="size-4.5" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium">{b.label}</p>
-                    <p className="text-[11px] text-muted-foreground">{b.description}</p>
-                  </div>
+      {/* Achievements (earned + locked) */}
+      <section className="mt-8">
+        <h2 className="mb-3 font-semibold">
+          {t("profile.badges")}
+          <span className="ml-2 text-sm font-normal text-muted-foreground">
+            {achievements.filter((a) => a.earned).length}/{achievements.length}
+          </span>
+        </h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {achievements.map((b) => {
+            const Icon = ((Icons as unknown as Record<string, LucideIcon>)[b.icon]) || Icons.Award;
+            return (
+              <div
+                key={b.key}
+                className={`flex items-center gap-2.5 rounded-2xl border p-3 ${b.earned ? "bg-card" : "bg-muted/30 opacity-55 grayscale"}`}
+                title={b.description}
+              >
+                <span className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${b.earned ? "bg-gradient-to-br from-indigo-500/15 to-violet-500/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                  <Icon className="size-4.5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{b.label}</p>
+                  <p className="text-[11px] text-muted-foreground">{b.description}</p>
                 </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Submissions */}
       {submissions.length > 0 && (
