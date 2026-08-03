@@ -38,6 +38,7 @@ export async function Footer() {
         { labelKey: "footer.blog", href: "/blog" },
         { labelKey: "footer.leaderboard", href: "/leaderboard" },
         { labelKey: "footer.submit", href: "/submit" },
+        { label: "Advertise", href: "/advertise" },
         { labelKey: "footer.contact", href: "/contact" },
       ],
     },

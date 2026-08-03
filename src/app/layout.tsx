@@ -4,6 +4,7 @@ import { GeistMono } from "geist/font/mono";
 import { Providers } from "@/components/layout/providers";
 import { JsonLd } from "@/components/seo/json-ld";
 import { RegisterSW } from "@/components/pwa/register-sw";
+import { AdScript } from "@/components/monetization/ad-script";
 import { websiteJsonLd, organizationJsonLd } from "@/lib/seo";
 import { getLocale } from "@/lib/i18n/server";
 import { getFlatDictionary } from "@/lib/i18n";
@@ -64,6 +65,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <JsonLd data={organizationJsonLd()} />
         <Providers locale={locale} dict={dict}>{children}</Providers>
         <RegisterSW />
+        <AdScript />
       </body>
     </html>
   );

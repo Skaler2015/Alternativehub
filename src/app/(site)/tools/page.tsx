@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Search, X, SlidersHorizontal } from "lucide-react";
 import { ToolCard } from "@/components/tools/tool-card";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
+import { AdSlot } from "@/components/monetization/ad-slot";
 import { Button } from "@/components/ui/button";
 import { listTools, getCategories } from "@/lib/data/queries";
 import { buildMetadata } from "@/lib/seo";
@@ -162,6 +163,8 @@ export default async function ToolsPage({ searchParams }: { searchParams: Search
               {tools.map((tool) => <ToolCard key={tool.id} tool={tool} />)}
             </div>
           )}
+
+          <AdSlot slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_BROWSE} className="mt-8" />
 
           {totalPages > 1 && (
             <nav className="mt-10 flex items-center justify-center gap-2" aria-label="Pagination">

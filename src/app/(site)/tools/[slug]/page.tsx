@@ -197,6 +197,11 @@ export default async function ToolPage({ params }: { params: Params }) {
               </Button>
             )}
           </div>
+          {tool.affiliateUrl && (
+            <p className="text-right text-[11px] text-muted-foreground">
+              We may earn a commission — <Link href="/terms" className="underline hover:text-foreground">learn more</Link>
+            </p>
+          )}
           <div className="flex flex-wrap items-center gap-2">
             <ToolActions
               slug={tool.slug}
