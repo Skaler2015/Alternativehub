@@ -98,27 +98,41 @@ async function geminiGenerate(
 ): Promise<string | null> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return null;
-  const model = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
 
-  try {
-    const res = await fetch(`${GEMINI_BASE}/${model}:generateContent?key=${key}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      signal: AbortSignal.timeout(30000),
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: system }] },
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: jsonMode ? { responseMimeType: "application/json" } : {},
-      }),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
-    };
-    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
-  } catch {
-    return null;
+  // Try the configured model first, then fall back to widely-available models
+  // so a single deprecated/renamed model can't silently disable AI.
+  const configured = process.env.GEMINI_MODEL;
+  const models = [...new Set([configured, "gemini-2.0-flash", "gemini-flash-latest", "gemini-1.5-flash"].filter(Boolean))] as string[];
+
+  for (const model of models) {
+    try {
+      const res = await fetch(`${GEMINI_BASE}/${model}:generateContent?key=${key}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        signal: AbortSignal.timeout(25000),
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: system }] },
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: jsonMode ? { responseMimeType: "application/json" } : {},
+        }),
+      });
+      if (!res.ok) {
+        // 404 = model not available for this key → try the next model.
+        if (res.status === 404) continue;
+        const errText = await res.text().catch(() => "");
+        console.warn(`[gemini] ${model} responded ${res.status}: ${errText.slice(0, 200)}`);
+        continue;
+      }
+      const data = (await res.json()) as {
+        candidates?: { content?: { parts?: { text?: string }[] } }[];
+      };
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) return text;
+    } catch (err) {
+      console.warn(`[gemini] ${model} request failed:`, String(err).slice(0, 200));
+    }
   }
+  return null;
 }
 
 async function geminiJson<T>(
