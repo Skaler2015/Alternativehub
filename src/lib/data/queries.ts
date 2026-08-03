@@ -344,9 +344,30 @@ export async function getToolReviews(toolId: string, take = 10) {
       where: { toolId, approved: true },
       orderBy: [{ helpful: "desc" }, { createdAt: "desc" }],
       take,
-      include: { user: { select: { id: true, name: true, image: true } } },
+      include: {
+        user: { select: { id: true, name: true, image: true } },
+        repliedBy: { select: { name: true } },
+      },
     }),
   );
+}
+
+/** Star distribution (1-5) + total for a tool's approved reviews. */
+export async function getRatingBreakdown(toolId: string) {
+  return safe({ total: 0, counts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } as Record<number, number> }, async () => {
+    const rows = await prisma.review.groupBy({
+      by: ["rating"],
+      where: { toolId, approved: true },
+      _count: { _all: true },
+    });
+    const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    let total = 0;
+    for (const r of rows) {
+      counts[r.rating] = r._count._all;
+      total += r._count._all;
+    }
+    return { total, counts };
+  });
 }
 
 /** Similar tools = same category, excluding the tool and its listed alternatives. */

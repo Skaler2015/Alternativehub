@@ -43,10 +43,22 @@ export async function POST(req: Request, { params }: { params: Params }) {
     );
   }
 
+  // "Verified" = the reviewer has a linked OAuth account (a real trust signal).
+  const hasOAuth = await prisma.account.findFirst({ where: { userId: user.id }, select: { id: true } }).catch(() => null);
+
+  const { useCase, industry, companySize, ...core } = parsed.data;
+  const data = {
+    ...core,
+    useCase: useCase || null,
+    industry: industry || null,
+    companySize: companySize || null,
+    verified: Boolean(hasOAuth),
+  };
+
   const review = await prisma.review.upsert({
     where: { toolId_userId: { toolId: tool.id, userId: user.id } },
-    create: { toolId: tool.id, userId: user.id, ...parsed.data },
-    update: { ...parsed.data },
+    create: { toolId: tool.id, userId: user.id, ...data },
+    update: data,
   });
 
   await recomputeToolScores(tool.id);

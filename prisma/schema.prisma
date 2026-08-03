@@ -117,6 +117,7 @@ model User {
   accounts        Account[]
   sessions        Session[]
   reviews         Review[]
+  reviewReplies   Review[]         @relation("ReviewReplies")
   reviewVotes     ReviewVote[]
   votes           Vote[]
   bookmarks       Bookmark[]
@@ -469,12 +470,25 @@ model Review {
   body      String
   helpful   Int      @default(0)
   approved  Boolean  @default(true)
+  verified  Boolean  @default(false) // reviewer signed in via a linked OAuth account
+
+  // Optional G2-style context
+  useCase     String?
+  industry    String?
+  companySize String?
+
+  // Official reply (admin / moderator / claimed company)
+  reply        String?
+  repliedAt    DateTime?
+  repliedById  String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tool  Tool         @relation(fields: [toolId], references: [id], onDelete: Cascade)
-  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  votes ReviewVote[]
+  tool      Tool         @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repliedBy User?        @relation("ReviewReplies", fields: [repliedById], references: [id], onDelete: SetNull)
+  votes     ReviewVote[]
 
   @@unique([toolId, userId])
   @@index([toolId, approved, createdAt])

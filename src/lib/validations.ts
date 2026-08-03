@@ -15,6 +15,13 @@ export const reviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
   title: z.string().max(120).optional(),
   body: z.string().min(20, "Review must be at least 20 characters").max(4000),
+  useCase: z.string().max(120).optional().or(z.literal("")),
+  industry: z.string().max(60).optional().or(z.literal("")),
+  companySize: z.string().max(40).optional().or(z.literal("")),
+});
+
+export const reviewReplySchema = z.object({
+  reply: z.string().trim().min(2, "Reply is too short").max(2000),
 });
 
 export const submitToolSchema = z.object({

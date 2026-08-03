@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Star, ThumbsUp } from "lucide-react";
+import { Star, ThumbsUp, BadgeCheck, CornerDownRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/misc";
@@ -19,18 +19,29 @@ type ReviewData = {
   title: string | null;
   body: string;
   helpful: number;
+  verified?: boolean;
+  useCase?: string | null;
+  industry?: string | null;
+  companySize?: string | null;
+  reply?: string | null;
+  repliedAt?: string | Date | null;
+  repliedBy?: { name: string | null } | null;
   createdAt: string | Date;
   user: { id?: string; name: string | null; image: string | null };
 };
+
+const COMPANY_SIZES = ["Self-employed", "1-10", "11-50", "51-200", "201-1000", "1000+"];
 
 export function ReviewSection({
   slug,
   reviews,
   currentUserId,
+  isStaff = false,
 }: {
   slug: string;
   reviews: ReviewData[];
   currentUserId?: string | null;
+  isStaff?: boolean;
 }) {
   const { status } = useSession();
   const { t } = useT();
@@ -39,8 +50,13 @@ export function ReviewSection({
   const [hover, setHover] = React.useState(0);
   const [title, setTitle] = React.useState("");
   const [body, setBody] = React.useState("");
+  const [useCase, setUseCase] = React.useState("");
+  const [industry, setIndustry] = React.useState("");
+  const [companySize, setCompanySize] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
   const [formOpen, setFormOpen] = React.useState(false);
+  const [replyOpen, setReplyOpen] = React.useState<string | null>(null);
+  const [replyText, setReplyText] = React.useState("");
   const [helpfulState, setHelpfulState] = React.useState<
     Record<string, { count: number; voted: boolean }>
   >({});
@@ -80,19 +96,39 @@ export function ReviewSection({
     const res = await fetch(`/api/tools/${slug}/reviews`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rating, title: title || undefined, body }),
+      body: JSON.stringify({
+        rating, title: title || undefined, body,
+        useCase: useCase || undefined, industry: industry || undefined, companySize: companySize || undefined,
+      }),
     });
     setSubmitting(false);
     if (res.ok) {
       toast.success(t("reviews.published"));
       setFormOpen(false);
-      setRating(0);
-      setTitle("");
-      setBody("");
+      setRating(0); setTitle(""); setBody(""); setUseCase(""); setIndustry(""); setCompanySize("");
       router.refresh();
     } else {
       const data = await res.json().catch(() => null);
       toast.error(data?.error ?? "Could not publish review");
+    }
+  };
+
+  const submitReply = async (reviewId: string) => {
+    const reply = replyText.trim();
+    if (reply.length < 2) return;
+    const res = await fetch(`/api/reviews/${reviewId}/reply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reply }),
+    });
+    if (res.ok) {
+      toast.success("Reply posted");
+      setReplyOpen(null);
+      setReplyText("");
+      router.refresh();
+    } else {
+      const data = await res.json().catch(() => null);
+      toast.error(data?.error ?? "Could not post reply");
     }
   };
 
@@ -142,6 +178,18 @@ export function ReviewSection({
             onChange={(e) => setBody(e.target.value)}
             rows={4}
           />
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Input placeholder="What do you use it for? (optional)" value={useCase} onChange={(e) => setUseCase(e.target.value)} maxLength={120} />
+            <Input placeholder="Industry (optional)" value={industry} onChange={(e) => setIndustry(e.target.value)} maxLength={60} />
+            <select
+              value={companySize}
+              onChange={(e) => setCompanySize(e.target.value)}
+              className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            >
+              <option value="">Company size (optional)</option>
+              {COMPANY_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
           <div className="flex gap-2">
             <Button onClick={submit} disabled={submitting || body.length < 20}>
               {submitting ? t("reviews.publishing") : t("reviews.publish")}
@@ -171,22 +219,46 @@ export function ReviewSection({
                     <AvatarFallback>{getInitials(review.user.name ?? "A")}</AvatarFallback>
                   </Avatar>
                   <div>
-                    {review.user.id ? (
-                      <Link
-                        href={`/u/${review.user.id}`}
-                        className="text-sm font-medium transition-colors hover:text-primary"
-                      >
-                        {displayName}
-                      </Link>
-                    ) : (
-                      <p className="text-sm font-medium">{displayName}</p>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {review.user.id ? (
+                        <Link
+                          href={`/u/${review.user.id}`}
+                          className="text-sm font-medium transition-colors hover:text-primary"
+                        >
+                          {displayName}
+                        </Link>
+                      ) : (
+                        <p className="text-sm font-medium">{displayName}</p>
+                      )}
+                      {review.verified && (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-medium text-sky-600 dark:text-sky-400" title="Verified reviewer (signed in with a linked account)">
+                          <BadgeCheck className="size-3" /> Verified
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">{timeAgo(review.createdAt)}</p>
                   </div>
                   <RatingStars rating={review.rating} className="ml-auto" />
                 </div>
                 {review.title && <h3 className="mt-3 font-medium">{review.title}</h3>}
                 <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{review.body}</p>
+
+                {(review.useCase || review.industry || review.companySize) && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {review.useCase && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">Use: {review.useCase}</span>}
+                    {review.industry && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">{review.industry}</span>}
+                    {review.companySize && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">{review.companySize}</span>}
+                  </div>
+                )}
+
+                {review.reply && (
+                  <div className="mt-3 rounded-xl border-l-2 border-primary/40 bg-primary/5 p-3">
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                      <CornerDownRight className="size-3.5" /> Response from {review.repliedBy?.name ?? "the team"}
+                    </p>
+                    <p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{review.reply}</p>
+                  </div>
+                )}
                 {!isOwn && (
                   <button
                     type="button"
@@ -206,6 +278,26 @@ export function ReviewSection({
                   <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                     <ThumbsUp className="size-3.5" /> {hs.count} {t("reviews.foundHelpful")}
                   </p>
+                )}
+
+                {isStaff && !review.reply && (
+                  replyOpen === review.id ? (
+                    <div className="mt-3 space-y-2">
+                      <Textarea placeholder="Write an official response…" value={replyText} onChange={(e) => setReplyText(e.target.value)} rows={3} />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => submitReply(review.id)} disabled={replyText.trim().length < 2}>Post reply</Button>
+                        <Button size="sm" variant="ghost" onClick={() => { setReplyOpen(null); setReplyText(""); }}>Cancel</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { setReplyOpen(review.id); setReplyText(""); }}
+                      className="mt-3 ml-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary"
+                    >
+                      <CornerDownRight className="size-3.5" /> Reply
+                    </button>
+                  )
                 )}
               </article>
             );

@@ -40,7 +40,8 @@ import { ScreenshotGallery } from "@/components/tools/screenshot-gallery";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { bumpViewCount } from "@/lib/cache";
-import { getSimilarTools, getToolBySlug, getToolReviews } from "@/lib/data/queries";
+import { getSimilarTools, getToolBySlug, getToolReviews, getRatingBreakdown } from "@/lib/data/queries";
+import { RatingBreakdown } from "@/components/tools/rating-breakdown";
 import { buildMetadata, faqJsonLd, softwareAppJsonLd } from "@/lib/seo";
 import { PRICING_LABELS } from "@/lib/constants";
 import { formatNumber } from "@/lib/utils";
@@ -72,8 +73,10 @@ export default async function ToolPage({ params }: { params: Params }) {
 
   const session = await auth();
   const { t } = await getT();
-  const [reviews, similar, userState] = await Promise.all([
+  const isStaff = session?.user?.role === "ADMIN" || session?.user?.role === "MODERATOR";
+  const [reviews, breakdown, similar, userState] = await Promise.all([
     getToolReviews(tool.id),
+    getRatingBreakdown(tool.id),
     getSimilarTools(
       tool.id,
       tool.categoryId,
@@ -394,7 +397,10 @@ export default async function ToolPage({ params }: { params: Params }) {
             </div>
           )}
 
-          <ReviewSection slug={tool.slug} reviews={reviews} currentUserId={session?.user?.id ?? null} />
+          {breakdown.total > 0 && (
+            <RatingBreakdown average={tool.rating} total={breakdown.total} counts={breakdown.counts} />
+          )}
+          <ReviewSection slug={tool.slug} reviews={reviews} currentUserId={session?.user?.id ?? null} isStaff={isStaff} />
         </div>
 
         {/* ── Sidebar ── */}
