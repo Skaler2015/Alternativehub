@@ -154,6 +154,8 @@ export const en = {
 
   // ── Profile ──
   "profile.reputation": "reputation",
+  "profile.followers": "followers",
+  "profile.following": "following",
   "profile.joined": "Joined",
   "profile.website": "Website",
   "profile.reviews": "Reviews",

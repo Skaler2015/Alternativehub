@@ -8,7 +8,9 @@ import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/misc";
 import { Badge } from "@/components/ui/badge";
 import { RatingStars } from "@/components/tools/rating-stars";
+import { FollowButton } from "@/components/social/follow-button";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { computeBadges, getUserStats } from "@/lib/community";
 import { buildMetadata } from "@/lib/seo";
 import { getT } from "@/lib/i18n/server";
@@ -42,7 +44,8 @@ export default async function ProfilePage({ params }: { params: Params }) {
   if (!user || user.isBanned) notFound();
 
   const { t } = await getT();
-  const [stats, reviews, submissions, collections] = await Promise.all([
+  const session = await auth();
+  const [stats, reviews, submissions, collections, followerCount, followingCount, isFollowing] = await Promise.all([
     getUserStats(user.id),
     prisma.review.findMany({
       where: { userId: user.id, approved: true },
@@ -62,9 +65,18 @@ export default async function ProfilePage({ params }: { params: Params }) {
       take: 8,
       select: { id: true, name: true, _count: { select: { items: true } } },
     }),
+    prisma.follow.count({ where: { followingId: user.id } }),
+    prisma.follow.count({ where: { followerId: user.id } }),
+    session?.user
+      ? prisma.follow
+          .findUnique({ where: { followerId_followingId: { followerId: session.user.id, followingId: user.id } }, select: { followerId: true } })
+          .then((f) => !!f)
+          .catch(() => false)
+      : Promise.resolve(false),
   ]);
 
   const badges = computeBadges(stats, user.reputation);
+  const isSelf = session?.user?.id === user.id;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
@@ -90,6 +102,8 @@ export default async function ProfilePage({ params }: { params: Params }) {
           {user.bio && <p className="mt-1 text-sm text-muted-foreground">{user.bio}</p>}
           <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground sm:justify-start">
             <span className="font-semibold text-primary">{user.reputation} {t("profile.reputation")}</span>
+            <span><b className="text-foreground">{followerCount}</b> {t("profile.followers")}</span>
+            <span><b className="text-foreground">{followingCount}</b> {t("profile.following")}</span>
             <span>{t("profile.joined")} {formatDate(user.createdAt)}</span>
             {user.website && (
               <a href={user.website} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1 hover:text-foreground">
@@ -98,6 +112,11 @@ export default async function ProfilePage({ params }: { params: Params }) {
             )}
           </div>
         </div>
+        {!isSelf && (
+          <div className="shrink-0">
+            <FollowButton userId={user.id} initialFollowing={isFollowing} initialFollowers={followerCount} />
+          </div>
+        )}
       </header>
 
       {/* Stats */}

@@ -156,6 +156,8 @@ export const hi: Partial<Dictionary> = {
 
   // ── Profile ──
   "profile.reputation": "प्रतिष्ठा",
+  "profile.followers": "फ़ॉलोअर्स",
+  "profile.following": "फ़ॉलोइंग",
   "profile.joined": "शामिल हुए",
   "profile.website": "वेबसाइट",
   "profile.reviews": "रिव्यू",

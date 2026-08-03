@@ -119,6 +119,8 @@ model User {
   reviews         Review[]
   reviewReplies   Review[]         @relation("ReviewReplies")
   reviewVotes     ReviewVote[]
+  following       Follow[]         @relation("Follower")
+  followers       Follow[]         @relation("Following")
   votes           Vote[]
   bookmarks       Bookmark[]
   collections     Collection[]
@@ -556,6 +558,18 @@ model CollectionItem {
   tool       Tool       @relation(fields: [toolId], references: [id], onDelete: Cascade)
 
   @@id([collectionId, toolId])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followingId])
 }
 
 model RecentlyViewed {
