@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Bookmark, History, LayoutDashboard, Settings, Star } from "lucide-react";
+import { Bookmark, FolderOpen, History, LayoutDashboard, Settings, Star } from "lucide-react";
 
 const LINKS = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/bookmarks", label: "Bookmarks", icon: Bookmark },
+  { href: "/dashboard/collections", label: "Collections", icon: FolderOpen },
   { href: "/dashboard/reviews", label: "My Reviews", icon: Star },
   { href: "/dashboard/history", label: "Recently Viewed", icon: History },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },

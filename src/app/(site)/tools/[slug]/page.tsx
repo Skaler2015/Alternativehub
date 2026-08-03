@@ -34,6 +34,7 @@ import { ScoreRing } from "@/components/tools/score-ring";
 import { ToolActions } from "@/components/tools/tool-actions";
 import { ReviewSection } from "@/components/tools/review-section";
 import { TrackView } from "@/components/analytics/track-view";
+import { SaveToCollection } from "@/components/collections/save-to-collection";
 import { getT } from "@/lib/i18n/server";
 import { ScreenshotGallery } from "@/components/tools/screenshot-gallery";
 import { auth } from "@/lib/auth";
@@ -190,13 +191,16 @@ export default async function ToolPage({ params }: { params: Params }) {
               </Button>
             )}
           </div>
-          <ToolActions
-            slug={tool.slug}
-            name={tool.name}
-            upvotes={tool.upvotes}
-            bookmarked={Boolean(userState[0])}
-            voted={userState[1]?.type ?? null}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <ToolActions
+              slug={tool.slug}
+              name={tool.name}
+              upvotes={tool.upvotes}
+              bookmarked={Boolean(userState[0])}
+              voted={userState[1]?.type ?? null}
+            />
+            <SaveToCollection toolId={tool.id} />
+          </div>
         </div>
       </header>
 

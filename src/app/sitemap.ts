@@ -13,6 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/categories`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${base}/compare`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${base}/blog`, changeFrequency: "daily", priority: 0.7 },
+    { url: `${base}/collections`, changeFrequency: "daily", priority: 0.6 },
     { url: `${base}/leaderboard`, changeFrequency: "daily", priority: 0.5 },
     { url: `${base}/submit`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${base}/about`, changeFrequency: "monthly", priority: 0.4 },
@@ -22,7 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    const [tools, categories, comparisons, posts, altTools] = await Promise.all([
+    const [tools, categories, comparisons, posts, collections, altTools] = await Promise.all([
       prisma.tool.findMany({
         where: { status: "PUBLISHED", deletedAt: null },
         select: { slug: true, updatedAt: true, logoUrl: true },
@@ -33,6 +34,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       prisma.blogPost.findMany({
         where: { published: true },
         select: { slug: true, updatedAt: true },
+      }),
+      prisma.collection.findMany({
+        where: { isPublic: true, items: { some: {} } },
+        select: { id: true, createdAt: true },
+        take: 2000,
       }),
       prisma.tool.findMany({
         where: { status: "PUBLISHED", deletedAt: null, alternativesFrom: { some: {} } },
@@ -73,6 +79,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: p.updatedAt,
         changeFrequency: "monthly" as const,
         priority: 0.6,
+      })),
+      ...collections.map((c) => ({
+        url: `${base}/collections/${c.id}`,
+        lastModified: c.createdAt,
+        changeFrequency: "weekly" as const,
+        priority: 0.5,
       })),
     ];
   } catch {

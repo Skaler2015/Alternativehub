@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { Bookmark, LayoutDashboard, LogOut, Settings, Shield, Star } from "lucide-react";
+import { Bookmark, FolderOpen, LayoutDashboard, LogOut, Settings, Shield, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/misc";
 import {
@@ -59,6 +59,9 @@ export function UserMenu() {
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/dashboard/bookmarks"><Bookmark /> {t("auth.bookmarks")}</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/collections"><FolderOpen /> {t("nav.collections")}</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/dashboard/reviews"><Star /> {t("auth.myReviews")}</Link>

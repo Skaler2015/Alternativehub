@@ -4,6 +4,7 @@ export const en = {
   "nav.browse": "Browse",
   "nav.categories": "Categories",
   "nav.compare": "Compare",
+  "nav.collections": "Collections",
   "nav.leaderboard": "Leaderboard",
   "nav.blog": "Blog",
   "nav.submit": "Submit Tool",
@@ -160,6 +161,7 @@ export const en = {
   "profile.helpfulVotes": "Helpful votes",
   "profile.badges": "Badges",
   "profile.submittedTools": "Submitted Tools",
+  "profile.collections": "Collections",
   "profile.recentReviews": "Recent Reviews",
 
   // ── Search palette ──

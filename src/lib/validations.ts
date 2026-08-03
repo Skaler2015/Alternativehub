@@ -101,6 +101,17 @@ export const opsActionSchema = z.object({
   action: z.enum(["recompute-scores", "enrich-batch", "check-links", "recompute-reputation", "send-digest", "detect-alternatives", "generate-tools"]),
 });
 
+export const collectionSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(80),
+  description: z.string().trim().max(500).optional().or(z.literal("")),
+  isPublic: z.boolean().optional(),
+});
+
+export const collectionItemSchema = z.object({
+  toolId: z.string().min(1),
+  note: z.string().trim().max(280).optional(),
+});
+
 export const contactSchema = z.object({
   name: z.string().trim().min(2, "Please enter your name").max(80),
   email: z.string().trim().email("Enter a valid email address").max(160),

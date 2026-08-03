@@ -42,7 +42,7 @@ export default async function ProfilePage({ params }: { params: Params }) {
   if (!user || user.isBanned) notFound();
 
   const { t } = await getT();
-  const [stats, reviews, submissions] = await Promise.all([
+  const [stats, reviews, submissions, collections] = await Promise.all([
     getUserStats(user.id),
     prisma.review.findMany({
       where: { userId: user.id, approved: true },
@@ -55,6 +55,12 @@ export default async function ProfilePage({ params }: { params: Params }) {
       orderBy: { popularityScore: "desc" },
       take: 8,
       select: { name: true, slug: true },
+    }),
+    prisma.collection.findMany({
+      where: { userId: user.id, isPublic: true, items: { some: {} } },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      select: { id: true, name: true, _count: { select: { items: true } } },
     }),
   ]);
 
@@ -139,6 +145,20 @@ export default async function ProfilePage({ params }: { params: Params }) {
             {submissions.map((t) => (
               <Link key={t.slug} href={`/tools/${t.slug}`} className="rounded-full border px-3 py-1.5 text-sm transition-colors hover:border-primary/40 hover:text-primary">
                 {t.name}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Public collections */}
+      {collections.length > 0 && (
+        <section className="mt-8">
+          <h2 className="mb-3 font-semibold">{t("profile.collections")}</h2>
+          <div className="flex flex-wrap gap-2">
+            {collections.map((c) => (
+              <Link key={c.id} href={`/collections/${c.id}`} className="rounded-full border px-3 py-1.5 text-sm transition-colors hover:border-primary/40 hover:text-primary">
+                {c.name} <span className="text-xs text-muted-foreground">· {c._count.items}</span>
               </Link>
             ))}
           </div>

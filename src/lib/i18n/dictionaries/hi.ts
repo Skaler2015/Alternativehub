@@ -6,6 +6,7 @@ export const hi: Partial<Dictionary> = {
   "nav.browse": "टूल्स देखें",
   "nav.categories": "श्रेणियाँ",
   "nav.compare": "तुलना करें",
+  "nav.collections": "कलेक्शन",
   "nav.leaderboard": "लीडरबोर्ड",
   "nav.blog": "ब्लॉग",
   "nav.submit": "टूल जोड़ें",
@@ -162,6 +163,7 @@ export const hi: Partial<Dictionary> = {
   "profile.helpfulVotes": "मददगार वोट",
   "profile.badges": "बैज",
   "profile.submittedTools": "जोड़े गए टूल्स",
+  "profile.collections": "कलेक्शन",
   "profile.recentReviews": "हाल के रिव्यू",
 
   // ── Search palette ──
