@@ -509,3 +509,23 @@ export async function getBlogPost(slug: string) {
     }),
   );
 }
+
+/** Related posts — same category, newest first, excluding the current one. */
+export async function getRelatedPosts(category: string, excludeSlug: string, take = 3) {
+  return safe([], async () => {
+    const same = await prisma.blogPost.findMany({
+      where: { published: true, category: category as never, slug: { not: excludeSlug } },
+      orderBy: { publishedAt: "desc" },
+      take,
+      select: { slug: true, title: true, excerpt: true, coverUrl: true, category: true, publishedAt: true },
+    });
+    if (same.length >= take) return same;
+    const fill = await prisma.blogPost.findMany({
+      where: { published: true, slug: { notIn: [excludeSlug, ...same.map((p) => p.slug)] } },
+      orderBy: { publishedAt: "desc" },
+      take: take - same.length,
+      select: { slug: true, title: true, excerpt: true, coverUrl: true, category: true, publishedAt: true },
+    });
+    return [...same, ...fill];
+  });
+}
