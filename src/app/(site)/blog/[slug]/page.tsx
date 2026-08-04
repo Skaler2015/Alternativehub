@@ -5,6 +5,7 @@ import { Clock, List } from "lucide-react";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { JsonLd } from "@/components/seo/json-ld";
 import { ShareButtons } from "@/components/blog/share-buttons";
+import { BlogComments } from "@/components/blog/blog-comments";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/misc";
 import { prisma } from "@/lib/prisma";
 import { getBlogPost, getRelatedPosts } from "@/lib/data/queries";
@@ -78,7 +79,15 @@ export default async function BlogPostPage({ params }: { params: Params }) {
   const post = await getBlogPost(slug);
   if (!post) notFound();
 
-  const related = await getRelatedPosts(post.category, post.slug);
+  const [related, comments] = await Promise.all([
+    getRelatedPosts(post.category, post.slug),
+    prisma.blogComment.findMany({
+      where: { postId: post.id },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: { id: true, body: true, createdAt: true, user: { select: { id: true, name: true, image: true } } },
+    }).catch(() => []),
+  ]);
   const { html, toc } = renderMarkdown(post.content);
   const minutes = readingTime(post.content);
 
@@ -150,6 +159,8 @@ export default async function BlogPostPage({ params }: { params: Params }) {
               </div>
             </section>
           )}
+
+          <BlogComments postId={post.id} initial={comments} />
         </article>
 
         {/* Desktop sticky TOC */}

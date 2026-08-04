@@ -108,6 +108,10 @@ export const opsActionSchema = z.object({
   action: z.enum(["recompute-scores", "enrich-batch", "check-links", "recompute-reputation", "send-digest", "detect-alternatives", "generate-tools"]),
 });
 
+export const blogCommentSchema = z.object({
+  body: z.string().trim().min(2, "Comment is too short").max(2000),
+});
+
 export const companyEditSchema = z.object({
   name: z.string().trim().min(2, "Name is required").max(120),
   description: z.string().trim().max(2000).optional().or(z.literal("")),
