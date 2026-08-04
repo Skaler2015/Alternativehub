@@ -124,6 +124,7 @@ model User {
   companyFollows  CompanyFollow[]
   claimedCompanies Company[]       @relation("ClaimedCompanies")
   blogComments    BlogComment[]
+  pushSubscriptions PushSubscription[]
   votes           Vote[]
   bookmarks       Bookmark[]
   collections     Collection[]
@@ -699,6 +700,19 @@ model BlogComment {
   user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([postId, createdAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // ─────────────────────────── Ops & Analytics ───────────────────────────

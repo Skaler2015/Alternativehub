@@ -4,6 +4,7 @@ import { Bell } from "lucide-react";
 import { requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { MarkAllRead } from "@/components/notifications/mark-all-read";
+import { EnablePush } from "@/components/notifications/enable-push";
 import { cn, timeAgo } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,10 @@ export default async function NotificationsPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight"><Bell className="size-6 text-primary" /> Notifications</h1>
-        <MarkAllRead hasUnread={hasUnread} />
+        <div className="flex items-center gap-2">
+          <EnablePush />
+          <MarkAllRead hasUnread={hasUnread} />
+        </div>
       </div>
 
       {notifications.length === 0 ? (

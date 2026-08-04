@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { sendPush } from "@/lib/push";
 import type { NotificationType } from "@prisma/client";
 
 /**
@@ -22,6 +23,8 @@ export async function notify(input: {
         link: input.link ?? null,
       },
     });
+    // Best-effort browser/OS push (no-op without VAPID keys).
+    void sendPush(input.userId, { title: input.title, body: input.body, url: input.link ?? "/" });
   } catch {
     // never propagate
   }
