@@ -12,6 +12,8 @@ import {
   Sparkles,
   Star,
   TrendingUp,
+  Layers,
+  FolderOpen,
 } from "lucide-react";
 import { Hero } from "@/components/home/hero";
 import { ToolSection } from "@/components/home/tool-section";
@@ -47,6 +49,29 @@ export default async function HomePage() {
 
       <StatsBand stats={stats} />
 
+      {/* Value props */}
+      <FadeIn>
+        <section className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              { icon: Sparkles, title: t("home.vp1.title"), sub: t("home.vp1.sub") },
+              { icon: Star, title: t("home.vp2.title"), sub: t("home.vp2.sub") },
+              { icon: Scale, title: t("home.vp3.title"), sub: t("home.vp3.sub") },
+            ].map((vp) => (
+              <div key={vp.title} className="flex items-start gap-3 rounded-2xl border bg-card p-5">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/15 to-violet-500/15 text-primary">
+                  <vp.icon className="size-5" />
+                </span>
+                <div>
+                  <p className="font-semibold">{vp.title}</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">{vp.sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </FadeIn>
+
       <ToolSection
         title={t("home.editorsChoice")}
         subtitle={t("home.editorsChoice.sub")}
@@ -64,6 +89,73 @@ export default async function HomePage() {
       />
 
       <CategoryGrid categories={categories} />
+
+      {/* Popular collections */}
+      {data.collections.length > 0 && (
+        <FadeIn>
+          <section className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="mb-5 flex items-end justify-between">
+              <div>
+                <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight sm:text-2xl">
+                  <Layers className="size-5 text-violet-500" /> {t("home.popularCollections")}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">{t("home.popularCollections.sub")}</p>
+              </div>
+              <Link href="/collections" className="group inline-flex items-center gap-1 text-sm font-medium text-primary">
+                {t("common.viewAll")} <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {data.collections.map((c) => (
+                <Link key={c.id} href={`/collections/${c.id}`} className="group rounded-2xl border bg-card p-5 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:soft-shadow-lg">
+                  <div className="flex items-center gap-2">
+                    <FolderOpen className="size-5 text-primary" />
+                    <h3 className="truncate font-semibold transition-colors group-hover:text-primary">{c.name}</h3>
+                  </div>
+                  <div className="mt-3 flex -space-x-2">
+                    {c.logos.map((logo, i) => (
+                      <span key={i} className="flex size-8 items-center justify-center overflow-hidden rounded-lg border bg-background">
+                        {logo ? <img src={logo} alt="" className="size-full object-contain p-1" /> : null}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-xs text-muted-foreground">{c.count} tools</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        </FadeIn>
+      )}
+
+      {/* Featured companies */}
+      {data.companies.length > 0 && (
+        <FadeIn>
+          <section className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="mb-5 flex items-end justify-between">
+              <div>
+                <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight sm:text-2xl">
+                  <Building2 className="size-5 text-indigo-500" /> {t("home.featuredCompanies")}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">{t("home.featuredCompanies.sub")}</p>
+              </div>
+              <Link href="/companies" className="group inline-flex items-center gap-1 text-sm font-medium text-primary">
+                {t("common.viewAll")} <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+              {data.companies.map((c) => (
+                <Link key={c.slug} href={`/companies/${c.slug}`} className="group flex flex-col items-center gap-2 rounded-2xl border bg-card p-5 text-center transition-all hover:-translate-y-0.5 hover:border-primary/30">
+                  <span className="flex size-12 items-center justify-center overflow-hidden rounded-xl border bg-background">
+                    {c.logoUrl ? <img src={c.logoUrl} alt="" className="size-full object-contain p-1.5" /> : <Building2 className="size-5 text-muted-foreground" />}
+                  </span>
+                  <span className="truncate text-sm font-medium transition-colors group-hover:text-primary">{c.name}</span>
+                  <span className="text-xs text-muted-foreground">{c.toolCount} tools</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        </FadeIn>
+      )}
 
       <ToolSection
         title={t("home.trendingAi")}

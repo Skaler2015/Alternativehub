@@ -236,4 +236,16 @@ export const hi: Partial<Dictionary> = {
   "home.allPosts": "सभी पोस्ट",
   "home.neverMiss": "कोई बेहतर टूल कभी न चूकें",
   "home.neverMiss.sub": "हर हफ़्ते एक ईमेल — बेहतरीन नए विकल्प, डील और तुलनाएँ। कभी स्पैम नहीं।",
+
+  // ── Homepage polish ──
+  "home.vp1.title": "AI-विश्लेषित",
+  "home.vp1.sub": "हर टूल में AI सारांश, फ़ायदे और नुकसान",
+  "home.vp2.title": "समुदाय-रेटेड",
+  "home.vp2.sub": "असली यूज़र्स के असली रिव्यू, रेटिंग और वोट",
+  "home.vp3.title": "सेकंडों में तुलना",
+  "home.vp3.sub": "स्पष्ट विजेता के साथ आमने-सामने तुलना",
+  "home.popularCollections": "लोकप्रिय कलेक्शन",
+  "home.popularCollections.sub": "समुदाय द्वारा बनाई गई टूल लिस्ट",
+  "home.featuredCompanies": "फ़ीचर्ड कंपनियाँ",
+  "home.featuredCompanies.sub": "टूल्स के पीछे की कंपनियाँ",
 };

@@ -55,6 +55,8 @@ const EMPTY_HOME = {
   enterprise: [] as ToolCard[],
   comparisons: [] as { slug: string; title: string; summary: string | null }[],
   posts: [] as { slug: string; title: string; excerpt: string; coverUrl: string | null; category: string; publishedAt: Date | null }[],
+  collections: [] as { id: string; name: string; count: number; logos: (string | null)[] }[],
+  companies: [] as { slug: string; name: string; logoUrl: string | null; toolCount: number }[],
 };
 
 export async function getHomeData(): Promise<typeof EMPTY_HOME> {
@@ -63,6 +65,7 @@ export async function getHomeData(): Promise<typeof EMPTY_HOME> {
       const [
         featured, topRated, newest, trendingAi, trendingApps, aiPicks,
         openSource, bestFree, enterprise, comparisons, posts,
+        collectionsRaw, companiesRaw,
       ] = await Promise.all([
         prisma.tool.findMany({
           where: { ...PUBLISHED, featured: true },
@@ -129,10 +132,24 @@ export async function getHomeData(): Promise<typeof EMPTY_HOME> {
           select: { slug: true, title: true, excerpt: true, coverUrl: true, category: true, publishedAt: true },
           take: 3,
         }),
+        prisma.collection.findMany({
+          where: { isPublic: true, items: { some: {} } },
+          orderBy: { createdAt: "desc" },
+          take: 6,
+          select: { id: true, name: true, _count: { select: { items: true } }, items: { take: 4, select: { tool: { select: { logoUrl: true } } } } },
+        }),
+        prisma.company.findMany({
+          where: { tools: { some: PUBLISHED } },
+          orderBy: { tools: { _count: "desc" } },
+          take: 10,
+          select: { slug: true, name: true, logoUrl: true, _count: { select: { tools: true } } },
+        }),
       ]);
       return {
         featured, topRated, newest, trendingAi, trendingApps, aiPicks,
         openSource, bestFree, enterprise, comparisons, posts,
+        collections: collectionsRaw.map((c) => ({ id: c.id, name: c.name, count: c._count.items, logos: c.items.map((i) => i.tool.logoUrl) })),
+        companies: companiesRaw.map((c) => ({ slug: c.slug, name: c.name, logoUrl: c.logoUrl, toolCount: c._count.tools })),
       };
     }),
   );

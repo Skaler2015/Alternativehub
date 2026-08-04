@@ -234,6 +234,18 @@ export const en = {
   "home.allPosts": "All posts",
   "home.neverMiss": "Never miss a better tool",
   "home.neverMiss.sub": "One weekly email with the best new alternatives, deals and comparisons. No spam, ever.",
+
+  // ── Homepage polish ──
+  "home.vp1.title": "AI-analyzed",
+  "home.vp1.sub": "Every tool enriched with AI summaries, pros & cons",
+  "home.vp2.title": "Community-rated",
+  "home.vp2.sub": "Real reviews, ratings and votes from real users",
+  "home.vp3.title": "Compare in seconds",
+  "home.vp3.sub": "Side-by-side breakdowns with a clear winner",
+  "home.popularCollections": "Popular Collections",
+  "home.popularCollections.sub": "Curated software lists from the community",
+  "home.featuredCompanies": "Featured Companies",
+  "home.featuredCompanies.sub": "The makers behind the tools",
 } as const;
 
 export type Dictionary = Record<keyof typeof en, string>;
