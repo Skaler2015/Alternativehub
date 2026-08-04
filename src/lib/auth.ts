@@ -4,6 +4,7 @@ import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { compare } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 import type { UserRole } from "@prisma/client";
 
 declare module "next-auth" {
@@ -38,6 +39,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = credentials?.email as string | undefined;
         const password = credentials?.password as string | undefined;
         if (!email || !password) return null;
+
+        // Brute-force protection: cap failed-login attempts per account.
+        // No-op without REDIS_URL (graceful), enforced when Redis is configured.
+        const rl = await rateLimit(`login:${email.toLowerCase()}`, 8, 900).catch(() => ({ success: true }));
+        if (!rl.success) return null;
 
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user?.passwordHash || user.isBanned) return null;
