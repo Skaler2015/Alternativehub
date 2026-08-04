@@ -35,9 +35,11 @@ export const metadata: Metadata = {
     url: SITE.url,
     title: `${SITE.name} — ${SITE.tagline}`,
     description: SITE.description,
+    images: [{ url: `${SITE.url}/api/og?title=${encodeURIComponent(SITE.name)}&subtitle=${encodeURIComponent(SITE.tagline)}`, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
+    images: [`${SITE.url}/api/og?title=${encodeURIComponent(SITE.name)}&subtitle=${encodeURIComponent(SITE.tagline)}`],
     site: SITE.twitter,
   },
   robots: { index: true, follow: true },

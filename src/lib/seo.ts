@@ -11,7 +11,12 @@ export function buildMetadata(input: {
   keywords?: string[];
 }): Metadata {
   const url = `${SITE.url}${input.path}`;
-  const image = input.image ?? `${SITE.url}/og-default.png`;
+  // Dynamic, branded OG image built from the page title/description (falls back
+  // to an explicit image when provided, e.g. a blog cover).
+  const dynamicOg = `${SITE.url}/api/og?title=${encodeURIComponent(input.title)}${
+    input.description ? `&subtitle=${encodeURIComponent(input.description.slice(0, 130))}` : ""
+  }`;
+  const image = input.image ?? dynamicOg;
 
   return {
     title: input.title,
