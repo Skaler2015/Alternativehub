@@ -43,6 +43,9 @@ export const metadata: Metadata = {
     site: SITE.twitter,
   },
   robots: { index: true, follow: true },
+  alternates: {
+    types: { "application/rss+xml": `${SITE.url}/rss.xml` },
+  },
   verification: process.env.GOOGLE_SITE_VERIFICATION
     ? { google: process.env.GOOGLE_SITE_VERIFICATION }
     : undefined,

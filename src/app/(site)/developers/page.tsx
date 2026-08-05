@@ -108,6 +108,13 @@ export default function DevelopersPage() {
         <pre className="mt-3 overflow-x-auto rounded-xl border bg-muted/50 p-4 text-sm">
           <code>{base}/api/v1</code>
         </pre>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Machine-readable{" "}
+          <a href="/api/v1/openapi.json" className="font-medium text-primary hover:underline">
+            OpenAPI 3.1 spec
+          </a>{" "}
+          — import it into Postman, Insomnia or Swagger UI, or generate a typed client.
+        </p>
       </section>
 
       <section className="mt-10 space-y-6">
