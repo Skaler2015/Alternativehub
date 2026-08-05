@@ -19,6 +19,7 @@ const NAV_LINKS: { href: string; key: TranslationKey }[] = [
   { href: "/tools", key: "nav.browse" },
   { href: "/categories", key: "nav.categories" },
   { href: "/compare", key: "nav.compare" },
+  { href: "/trending", key: "nav.trending" },
   { href: "/collections", key: "nav.collections" },
   { href: "/leaderboard", key: "nav.leaderboard" },
   { href: "/blog", key: "nav.blog" },

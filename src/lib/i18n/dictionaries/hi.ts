@@ -6,12 +6,25 @@ export const hi: Partial<Dictionary> = {
   "nav.browse": "टूल्स देखें",
   "nav.categories": "श्रेणियाँ",
   "nav.compare": "तुलना करें",
+  "nav.trending": "ट्रेंडिंग",
   "nav.collections": "कलेक्शन",
   "nav.leaderboard": "लीडरबोर्ड",
   "nav.blog": "ब्लॉग",
   "nav.submit": "टूल जोड़ें",
   "nav.search": "खोजें...",
   "nav.menu": "मेन्यू",
+
+  // ── Trending / discovery ──
+  "trending.title": "अभी ट्रेंडिंग",
+  "trending.subtitle":
+    "देखें इस हफ़्ते समुदाय क्या एक्सप्लोर कर रहा है, नए जोड़े गए टूल्स खोजें, और अपने लिए चुनी गई सिफ़ारिशें पाएं।",
+  "trending.forYou": "आपके लिए",
+  "trending.forYouSub": "आपके देखे और सेव किए गए टूल्स के आधार पर सिफ़ारिशें।",
+  "trending.thisWeek": "इस हफ़्ते ट्रेंडिंग",
+  "trending.thisWeekSub": "पिछले 7 दिनों में सबसे ज़्यादा देखे गए टूल्स।",
+  "trending.recentlyAdded": "हाल ही में जोड़े गए",
+  "trending.recentlyAddedSub": "AlternativeHub पर अभी-अभी पब्लिश हुए नए टूल्स।",
+  "trending.empty": "अभी दिखाने के लिए कुछ नहीं — कैटलॉग बढ़ने पर जल्द वापस देखें।",
 
   // ── Common ──
   "common.viewAll": "सभी देखें",

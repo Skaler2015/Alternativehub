@@ -4,12 +4,25 @@ export const en = {
   "nav.browse": "Browse",
   "nav.categories": "Categories",
   "nav.compare": "Compare",
+  "nav.trending": "Trending",
   "nav.collections": "Collections",
   "nav.leaderboard": "Leaderboard",
   "nav.blog": "Blog",
   "nav.submit": "Submit Tool",
   "nav.search": "Search...",
   "nav.menu": "Menu",
+
+  // ── Trending / discovery ──
+  "trending.title": "Trending Right Now",
+  "trending.subtitle":
+    "See what the community is exploring this week, discover freshly added tools, and get picks tailored to you.",
+  "trending.forYou": "For You",
+  "trending.forYouSub": "Recommendations based on the tools you've viewed and bookmarked.",
+  "trending.thisWeek": "Trending This Week",
+  "trending.thisWeekSub": "The most-viewed tools over the last 7 days.",
+  "trending.recentlyAdded": "Recently Added",
+  "trending.recentlyAddedSub": "Fresh tools just published on AlternativeHub.",
+  "trending.empty": "Nothing to show yet — check back soon as the catalog grows.",
 
   // ── Common ──
   "common.viewAll": "View all",
