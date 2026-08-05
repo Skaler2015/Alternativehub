@@ -39,6 +39,7 @@ export async function Footer() {
         { labelKey: "footer.leaderboard", href: "/leaderboard" },
         { labelKey: "footer.submit", href: "/submit" },
         { label: "Advertise", href: "/advertise" },
+        { label: "Developer API", href: "/developers" },
         { labelKey: "footer.contact", href: "/contact" },
       ],
     },
