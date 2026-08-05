@@ -12,6 +12,7 @@ import {
   Mail,
   MessageSquare,
   Send,
+  Tag,
   Users,
 } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
@@ -23,6 +24,7 @@ const LINKS = [
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/listings", label: "Listings", icon: ListChecks },
   { href: "/admin/blog", label: "Blog", icon: FileText },
+  { href: "/admin/deals", label: "Deals", icon: Tag },
   { href: "/admin/reviews", label: "Reviews", icon: MessageSquare },
   { href: "/admin/reports", label: "Reports", icon: Flag },
   { href: "/admin/claims", label: "Claims", icon: Building2 },

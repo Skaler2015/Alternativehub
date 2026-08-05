@@ -7,6 +7,7 @@ export const hi: Partial<Dictionary> = {
   "nav.categories": "श्रेणियाँ",
   "nav.compare": "तुलना करें",
   "nav.trending": "ट्रेंडिंग",
+  "nav.deals": "डील्स",
   "nav.collections": "कलेक्शन",
   "nav.leaderboard": "लीडरबोर्ड",
   "nav.blog": "ब्लॉग",

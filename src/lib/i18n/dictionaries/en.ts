@@ -5,6 +5,7 @@ export const en = {
   "nav.categories": "Categories",
   "nav.compare": "Compare",
   "nav.trending": "Trending",
+  "nav.deals": "Deals",
   "nav.collections": "Collections",
   "nav.leaderboard": "Leaderboard",
   "nav.blog": "Blog",

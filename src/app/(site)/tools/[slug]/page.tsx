@@ -42,6 +42,8 @@ import { prisma } from "@/lib/prisma";
 import { bumpViewCount } from "@/lib/cache";
 import { getSimilarTools, getToolBySlug, getToolReviews, getRatingBreakdown } from "@/lib/data/queries";
 import { RatingBreakdown } from "@/components/tools/rating-breakdown";
+import { DealCard } from "@/components/deals/deal-card";
+import { getDealsForTool } from "@/lib/data/deals";
 import { buildMetadata, faqJsonLd, softwareAppJsonLd } from "@/lib/seo";
 import { PRICING_LABELS } from "@/lib/constants";
 import { formatNumber } from "@/lib/utils";
@@ -77,7 +79,7 @@ export default async function ToolPage({ params }: { params: Params }) {
     session?.user?.role === "ADMIN" ||
     session?.user?.role === "MODERATOR" ||
     (!!session?.user && !!tool.company?.claimedById && session.user.id === tool.company.claimedById);
-  const [reviews, breakdown, similar, userState] = await Promise.all([
+  const [reviews, breakdown, similar, deals, userState] = await Promise.all([
     getToolReviews(tool.id),
     getRatingBreakdown(tool.id),
     getSimilarTools(
@@ -85,6 +87,7 @@ export default async function ToolPage({ params }: { params: Params }) {
       tool.categoryId,
       tool.alternativesFrom.map((a) => a.target.id),
     ),
+    getDealsForTool(tool.id, new Date()),
     session?.user
       ? Promise.all([
           prisma.bookmark.findUnique({
@@ -361,6 +364,19 @@ export default async function ToolPage({ params }: { params: Params }) {
                       ))}
                     </ul>
                   </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {deals.length > 0 && (
+            <section id="deals">
+              <h2 className="flex items-center gap-2 text-xl font-semibold">
+                <TagIcon className="size-5 text-primary" /> {tool.name} Deals &amp; Offers
+              </h2>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {deals.map((d) => (
+                  <DealCard key={d.id} deal={d} showTool={false} />
                 ))}
               </div>
             </section>

@@ -143,3 +143,16 @@ export const contactSchema = z.object({
   // Honeypot: bots fill hidden fields; humans leave it empty.
   website: z.string().max(0).optional(),
 });
+
+export const dealWriteSchema = z.object({
+  toolId: z.string().min(1, "Select a tool"),
+  title: z.string().trim().min(3, "Title must be at least 3 characters").max(120),
+  description: z.string().trim().max(500).optional().or(z.literal("")),
+  discountLabel: z.string().trim().min(1, "Add a discount label").max(40),
+  couponCode: z.string().trim().max(40).optional().or(z.literal("")),
+  url: z.string().trim().url("Enter a valid deal URL").max(500),
+  featured: z.boolean().optional(),
+  active: z.boolean().optional(),
+  startsAt: z.string().trim().optional().or(z.literal("")),
+  endsAt: z.string().trim().optional().or(z.literal("")),
+});
