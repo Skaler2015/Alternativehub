@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "db:setup": "prisma generate && tsx scripts/db-wait.ts && prisma migrate deploy && tsx scripts/seed-if-empty.ts && tsx scripts/backfill-details.ts && tsx scripts/expand-catalog.ts && tsx scripts/expand-catalog-2.ts && tsx scripts/expand-catalog-3.ts && tsx scripts/expand-catalog-4.ts && tsx scripts/expand-catalog-5.ts && tsx scripts/expand-catalog-6.ts",
+    "vercel-build": "npm run db:setup && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "db:push": "prisma db push",
