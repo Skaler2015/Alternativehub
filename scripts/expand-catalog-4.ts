@@ -1,22 +1,17 @@
 /**
- * Bulk catalog expansion (batch 4) — adds 1,000+ real, well-known software
- * products across every category to broaden discovery and organic search.
+ * Bulk catalog expansion (batch 4) — 1,000+ real software products.
  *
- * Idempotent + safe: a tool is only created if its slug does NOT already exist,
- * so this never overwrites the original seed, earlier batches, or admin edits.
- * It runs on every Vercel deploy and never breaks the build on failure.
- *
- * To keep 1,000+ entries maintainable, each row is a compact tuple and the
- * builder derives a professional description, pros/cons, best-for, SEO fields
- * and deterministic scores. All data describes real, public products.
+ * Uses the shared bulk inserter (a handful of queries instead of tens of
+ * thousands) so a batch this large finishes inside the Vercel build.
+ * Duplicate-proof and idempotent: only brand-new slugs are inserted and
+ * existing data is never overwritten. All rows describe real, public products.
  */
 import { PrismaClient, type PricingModel } from "@prisma/client";
+import { ROWS as RAW_ROWS } from "./catalog-4-data";
+import { bulkInsert, type NormalizedRow } from "./bulk-catalog";
 
 const prisma = new PrismaClient();
 
-const favicon = (domain: string) => `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-
-/** Human labels per category slug (for description/SEO copy). */
 const CAT_LABEL: Record<string, string> = {
   "apps": "app", "websites": "online service", "ai-tools": "AI tool",
   "desktop-software": "desktop application", "games": "game", "browser-extensions": "browser extension",
@@ -30,7 +25,6 @@ const CAT_LABEL: Record<string, string> = {
   "low-code": "low-code platform",
 };
 
-/** Category-tailored pros/cons/best-for templates (kept realistic + generic). */
 const CAT_TEMPLATE: Record<string, { pros: string[]; cons: string[]; bestFor: string[] }> = {
   "ai-tools": { pros: ["Saves time on repetitive work", "Improving rapidly", "Easy to get started"], cons: ["Output needs review", "Usage limits on free plans"], bestFor: ["Creators", "Teams", "Automation"] },
   "developer-tools": { pros: ["Boosts developer productivity", "Integrates with common stacks", "Good documentation"], cons: ["Learning curve", "Advanced features are paid"], bestFor: ["Developers", "DevOps", "Teams"] },
@@ -59,12 +53,10 @@ const CAT_TEMPLATE: Record<string, { pros: string[]; cons: string[]; bestFor: st
   "browser-extensions": { pros: ["Lightweight", "Improves your workflow", "Free to try"], cons: ["Permissions to review", "Browser-dependent"], bestFor: ["Everyday browsing", "Productivity", "Research"] },
   "desktop-software": { pros: ["Powerful native features", "Works offline", "Reliable"], cons: ["Install and updates required", "Platform-specific"], bestFor: ["Professionals", "Power users", "Offline work"] },
   "apps": { pros: ["Convenient on the go", "Simple to use", "Syncs data"], cons: ["Ads on free tier", "Battery/data usage"], bestFor: ["Mobile users", "Everyday tasks", "On the go"] },
-  "websites": { pros: ["Nothing to install", "Accessible anywhere", "Frequent updates"], cons: ["Needs internet", "Account required"], bestFor: ["Everyone", "Quick tasks", "Collaboration"] },
+  "websites": { pros: ["Nothing to install", "Accessible anywhere", "Frequent updates"], cons: ["Needs internet", "Account may be required"], bestFor: ["Everyone", "Quick tasks", "Collaboration"] },
 };
-
 const DEFAULT_TEMPLATE = { pros: ["Useful feature set", "Easy to start", "Actively maintained"], cons: ["Premium features are paid", "Learning curve"], bestFor: ["Individuals", "Teams", "Businesses"] };
 
-/** Deterministic pseudo-score from a string (stable across deploys). */
 function hash(s: string): number {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
@@ -72,95 +64,45 @@ function hash(s: string): number {
 }
 function scoreFrom(slug: string): [number, number, number, number] {
   const h = hash(slug);
-  const alt = 68 + (h % 25);           // 68–92
-  const ai = 58 + ((h >> 3) % 30);     // 58–87
-  const pop = 62 + ((h >> 6) % 29);    // 62–90
-  const trust = 70 + ((h >> 9) % 23);  // 70–92
-  return [alt, ai, pop, trust];
+  return [68 + (h % 25), 58 + ((h >> 3) % 30), 62 + ((h >> 6) % 29), 70 + ((h >> 9) % 23)];
 }
 
-/** Compact row: [slug, name, domain, category, pricing, tagline, tagsCSV, platformsCSV?, openSource?] */
 type Row = [string, string, string, string, PricingModel, string, string, string?, boolean?];
 
-function buildDescription(name: string, cat: string, tagline: string, tags: string[]): string {
-  const label = CAT_LABEL[cat] ?? "tool";
-  const primary = tags[0] ? tags[0].replace(/-/g, " ") : label;
-  return `${name} is a ${label} — ${tagline}. It's a popular choice for anyone looking for a reliable ${primary} solution, offering a well-rounded feature set, a clean experience, and steady updates. Compare ${name} with the best alternatives on AlternativeHub.`;
-}
-
-async function upsertRow(row: Row): Promise<boolean> {
+function normalize(row: Row): NormalizedRow {
   const [slug, name, domain, cat, pricing, tagline, tagsCsv, platformsCsv, openSource] = row;
-  const category = await prisma.category.findUnique({ where: { slug: cat } });
-  if (!category) return false;
-
   const tags = tagsCsv.split(",").map((t) => t.trim()).filter(Boolean);
   const platforms = (platformsCsv ?? "web").split(",").map((p) => p.trim()).filter(Boolean);
   const tpl = CAT_TEMPLATE[cat] ?? DEFAULT_TEMPLATE;
-  const [alternativeScore, aiScore, popularityScore, trustScore] = scoreFrom(slug);
-
+  const label = CAT_LABEL[cat] ?? "tool";
+  const primary = tags[0] ? tags[0].replace(/-/g, " ") : label;
   const pros = [...tpl.pros];
   if (pricing === "FREE" || pricing === "FREEMIUM") pros.unshift("Has a free plan");
   if (openSource) pros.unshift("Open source");
-
-  const tool = await prisma.tool.create({
-    data: {
-      slug, name, tagline,
-      description: buildDescription(name, cat, tagline, tags),
-      websiteUrl: `https://${domain}`,
-      logoUrl: favicon(domain),
-      pricingModel: pricing,
-      pros: pros.slice(0, 4),
-      cons: tpl.cons,
-      bestFor: tpl.bestFor,
-      aiSummary: `${name} — ${tagline}.`,
-      status: "PUBLISHED",
-      publishedAt: new Date(),
-      verified: true,
-      isOpenSource: openSource ?? false,
-      alternativeScore, aiScore, popularityScore, trustScore,
-      viewCount: Math.round(popularityScore * 41),
-      upvotes: Math.round(popularityScore * 1.4),
-      categoryId: category.id,
-      seoTitle: `${name} — Reviews, Pricing & Best Alternatives`,
-      seoDesc: `${tagline}. Compare ${name} features, pricing, pros & cons and find the best ${name} alternatives.`,
-      keywords: [`${name.toLowerCase()} alternatives`, `${name.toLowerCase()} review`, ...tags],
-    },
-  });
-
-  for (const platformSlug of platforms) {
-    const platform = await prisma.platform.findUnique({ where: { slug: platformSlug } });
-    if (!platform) continue;
-    await prisma.toolPlatform.create({ data: { toolId: tool.id, platformId: platform.id } }).catch(() => {});
-  }
-  for (const tagName of tags) {
-    const tagSlug = tagName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const tag = await prisma.tag.upsert({ where: { slug: tagSlug }, create: { slug: tagSlug, name: tagName }, update: {} });
-    await prisma.toolTag.create({ data: { toolId: tool.id, tagId: tag.id } }).catch(() => {});
-  }
-  return true;
+  return {
+    slug, name, domain, category: cat, pricing, tagline,
+    description: `${name} is a ${label} — ${tagline}. It's a popular choice for anyone looking for a reliable ${primary} solution, offering a well-rounded feature set, a clean experience, and steady updates. Compare ${name} with the best alternatives on AlternativeHub.`,
+    pros: pros.slice(0, 4),
+    cons: tpl.cons,
+    bestFor: tpl.bestFor,
+    aiSummary: `${name} — ${tagline}.`,
+    seoTitle: `${name} — Reviews, Pricing & Best Alternatives`,
+    seoDesc: `${tagline}. Compare ${name} features, pricing, pros & cons and find the best ${name} alternatives.`,
+    keywords: [`${name.toLowerCase()} alternatives`, `${name.toLowerCase()} review`, ...tags],
+    scores: scoreFrom(slug),
+    tags, platforms, openSource: openSource ?? false,
+  };
 }
 
 async function run() {
-  let added = 0, skipped = 0;
   try {
-    for (const row of ROWS) {
-      const existing = await prisma.tool.findUnique({ where: { slug: row[0] }, select: { id: true } });
-      if (existing) { skipped += 1; continue; }
-      const ok = await upsertRow(row).catch((e) => { console.warn(`[expand-4] failed ${row[0]}:`, e); return false; });
-      if (ok) added += 1;
-    }
-    console.log(`[expand-4] Added ${added} new tools (${skipped} already existed, ${ROWS.length} total rows).`);
+    const rows = (RAW_ROWS as unknown as Row[]).map(normalize);
+    await bulkInsert(prisma, rows, "expand-4");
   } catch (err) {
     console.warn("[expand-4] Expansion failed (deploy continues).", err);
   } finally {
     await prisma.$disconnect().catch(() => {});
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────
-// DATA — 1,000+ real products, loaded from catalog-4-data.ts (compact tuples).
-// ─────────────────────────────────────────────────────────────────────────
-import { ROWS as RAW_ROWS } from "./catalog-4-data";
-const ROWS = RAW_ROWS as unknown as Row[];
 
 run();

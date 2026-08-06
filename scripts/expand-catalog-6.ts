@@ -1,21 +1,17 @@
 /**
- * Catalog expansion (batch 6) — adds 1,000+ software AND 1,000+ websites.
+ * Catalog expansion (batch 6) — 1,000+ software AND 1,000+ websites.
  *
- * Duplicate-proof by construction:
- *   1. An in-memory `seen` Set skips any repeated slug within this batch.
- *   2. A DB lookup skips any slug that already exists (seed or earlier batches).
- * So no duplicate is ever inserted, guaranteed — not just by manual checking.
- *
- * Idempotent + failure-safe: creates only brand-new tools, never overwrites
- * existing data, and a failure logs a warning without breaking the deploy.
- * All rows describe real, public products.
+ * Uses the shared bulk inserter for speed (a handful of queries instead of
+ * tens of thousands), which is what lets a batch this large finish inside the
+ * Vercel build. Duplicate-proof: the inserter skips in-batch repeats and any
+ * slug already in the DB, and never overwrites existing data. All rows are
+ * real, public products.
  */
 import { PrismaClient, type PricingModel } from "@prisma/client";
 import { ROWS as RAW_ROWS } from "./catalog-6-data";
+import { bulkInsert, type NormalizedRow } from "./bulk-catalog";
 
 const prisma = new PrismaClient();
-
-const favicon = (domain: string) => `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 
 const CAT_LABEL: Record<string, string> = {
   "apps": "app", "websites": "online service", "ai-tools": "AI tool",
@@ -72,78 +68,37 @@ function scoreFrom(slug: string): [number, number, number, number] {
   return [68 + (h % 25), 55 + ((h >> 3) % 30), 60 + ((h >> 6) % 30), 70 + ((h >> 9) % 23)];
 }
 
-/** [slug, name, domain, category, pricing, tagline, tagsCSV, platformsCSV?, openSource?] */
 type Row = [string, string, string, string, PricingModel, string, string, string?, boolean?];
 
-async function upsertRow(row: Row): Promise<boolean> {
+function normalize(row: Row): NormalizedRow {
   const [slug, name, domain, cat, pricing, tagline, tagsCsv, platformsCsv, openSource] = row;
-  const category = await prisma.category.findUnique({ where: { slug: cat } });
-  if (!category) return false;
-
   const tags = tagsCsv.split(",").map((t) => t.trim()).filter(Boolean);
   const platforms = (platformsCsv ?? "web").split(",").map((p) => p.trim()).filter(Boolean);
   const tpl = CAT_TEMPLATE[cat] ?? DEFAULT_TEMPLATE;
   const label = CAT_LABEL[cat] ?? "tool";
   const primary = tags[0] ? tags[0].replace(/-/g, " ") : label;
-  const [alternativeScore, aiScore, popularityScore, trustScore] = scoreFrom(slug);
-
   const pros = [...tpl.pros];
   if (pricing === "FREE" || pricing === "FREEMIUM") pros.unshift("Has a free plan");
   if (openSource) pros.unshift("Open source");
-
-  const tool = await prisma.tool.create({
-    data: {
-      slug, name, tagline,
-      description: `${name} is a ${label} — ${tagline}. It's a popular choice for anyone looking for a reliable ${primary} solution, with a well-rounded feature set and steady updates. Compare ${name} with the best alternatives on AlternativeHub.`,
-      websiteUrl: `https://${domain}`,
-      logoUrl: favicon(domain),
-      pricingModel: pricing,
-      pros: pros.slice(0, 4),
-      cons: tpl.cons,
-      bestFor: tpl.bestFor,
-      aiSummary: `${name} — ${tagline}.`,
-      status: "PUBLISHED",
-      publishedAt: new Date(),
-      verified: true,
-      isOpenSource: openSource ?? false,
-      alternativeScore, aiScore, popularityScore, trustScore,
-      viewCount: Math.round(popularityScore * 37),
-      upvotes: Math.round(popularityScore * 1.2),
-      categoryId: category.id,
-      seoTitle: `${name} — Reviews, Pricing & Best Alternatives`,
-      seoDesc: `${tagline}. Compare ${name} features, pricing, pros & cons and find the best ${name} alternatives.`,
-      keywords: [`${name.toLowerCase()} alternatives`, `${name.toLowerCase()} review`, ...tags],
-    },
-  });
-
-  for (const platformSlug of platforms) {
-    const platform = await prisma.platform.findUnique({ where: { slug: platformSlug } });
-    if (!platform) continue;
-    await prisma.toolPlatform.create({ data: { toolId: tool.id, platformId: platform.id } }).catch(() => {});
-  }
-  for (const tagName of tags) {
-    const tagSlug = tagName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const tag = await prisma.tag.upsert({ where: { slug: tagSlug }, create: { slug: tagSlug, name: tagName }, update: {} });
-    await prisma.toolTag.create({ data: { toolId: tool.id, tagId: tag.id } }).catch(() => {});
-  }
-  return true;
+  return {
+    slug, name, domain, category: cat, pricing, tagline,
+    description: `${name} is a ${label} — ${tagline}. It's a popular choice for anyone looking for a reliable ${primary} solution, with a well-rounded feature set and steady updates. Compare ${name} with the best alternatives on AlternativeHub.`,
+    pros: pros.slice(0, 4),
+    cons: tpl.cons,
+    bestFor: tpl.bestFor,
+    aiSummary: `${name} — ${tagline}.`,
+    seoTitle: `${name} — Reviews, Pricing & Best Alternatives`,
+    seoDesc: `${tagline}. Compare ${name} features, pricing, pros & cons and find the best ${name} alternatives.`,
+    keywords: [`${name.toLowerCase()} alternatives`, `${name.toLowerCase()} review`, ...tags],
+    scores: scoreFrom(slug),
+    tags, platforms, openSource: openSource ?? false,
+  };
 }
 
 async function run() {
-  const ROWS = RAW_ROWS as unknown as Row[];
-  const seen = new Set<string>();
-  let added = 0, dupInBatch = 0, existed = 0, websites = 0, software = 0;
   try {
-    for (const row of ROWS) {
-      const slug = row[0];
-      if (seen.has(slug)) { dupInBatch += 1; continue; }   // guard 1: no internal duplicate
-      seen.add(slug);
-      const existing = await prisma.tool.findUnique({ where: { slug }, select: { id: true } });
-      if (existing) { existed += 1; continue; }             // guard 2: no clash with existing
-      const ok = await upsertRow(row).catch((e) => { console.warn(`[expand-6] failed ${slug}:`, e); return false; });
-      if (ok) { added += 1; if (row[3] === "websites") websites += 1; else software += 1; }
-    }
-    console.log(`[expand-6] Added ${added} new tools (${websites} websites, ${software} software). Skipped ${existed} existing + ${dupInBatch} in-batch duplicates of ${ROWS.length} rows.`);
+    const rows = (RAW_ROWS as unknown as Row[]).map(normalize);
+    await bulkInsert(prisma, rows, "expand-6");
   } catch (err) {
     console.warn("[expand-6] Expansion failed (deploy continues).", err);
   } finally {
