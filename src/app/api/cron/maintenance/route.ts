@@ -5,6 +5,8 @@ import {
   checkBrokenLinks,
   detectAlternatives,
   enrichTool,
+  detectSpamReviews,
+  refreshStaleTools,
 } from "@/lib/automation";
 import { aiEnabled, summarizeReviews } from "@/lib/ai";
 import { recomputeAllReputations } from "@/lib/community";
@@ -115,6 +117,22 @@ export async function GET(req: Request) {
     summary.reputationsRecomputed = await recomputeAllReputations();
   } catch (err) {
     summary.reputationError = String(err);
+  }
+
+  // 5b. Spam/low-quality review sweep (fast, no AI) — un-approves clear spam.
+  try {
+    summary.spamSweep = await detectSpamReviews(300);
+  } catch (err) {
+    summary.spamError = String(err);
+  }
+
+  // 5c. Keep the oldest listings fresh with a light AI re-enrichment.
+  if (aiEnabled()) {
+    try {
+      summary.refreshedStale = await refreshStaleTools(4);
+    } catch (err) {
+      summary.refreshError = String(err);
+    }
   }
 
   // 6. Weekly digest — only on Mondays, and only if email is configured.

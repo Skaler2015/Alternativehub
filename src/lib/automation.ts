@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { faviconUrl, slugify } from "@/lib/utils";
-import { generateToolContent } from "@/lib/ai";
+import { generateToolContent, aiEnabled } from "@/lib/ai";
 import { uploadRemoteImage } from "@/lib/cloudinary";
 
 /**
@@ -275,4 +275,93 @@ export async function recomputeToolScores(toolId: string): Promise<void> {
       trustScore: Math.round(trustScore * 10) / 10,
     },
   });
+}
+
+/**
+ * Automated spam/low-quality review detection. Flags clearly promotional or
+ * link-stuffed reviews by un-approving them (conservative — only strong
+ * signals). The nightly score recompute then refreshes affected tool ratings.
+ */
+const REVIEW_SPAM_PATTERNS: RegExp[] = [
+  /https?:\/\//i,
+  /\bwww\.[a-z0-9-]+\.[a-z]{2,}/i,
+  /\b(buy now|discount code|coupon code|promo code|click here|visit my|earn money|make money online|free download|whatsapp\s*\+?\d)/i,
+  /\b(viagra|casino|betting|crypto giveaway|forex signals|loan approval)\b/i,
+  /(.)\1{9,}/, // long runs of a repeated character
+];
+
+export async function detectSpamReviews(batchSize = 300): Promise<{ scanned: number; flagged: number }> {
+  const reviews = await prisma.review
+    .findMany({
+      where: { approved: true },
+      orderBy: { id: "desc" },
+      take: batchSize,
+      select: { id: true, body: true, toolId: true },
+    })
+    .catch(() => [] as { id: string; body: string; toolId: string }[]);
+
+  const affected = new Set<string>();
+  let flagged = 0;
+  for (const r of reviews) {
+    const body = r.body ?? "";
+    if (REVIEW_SPAM_PATTERNS.some((p) => p.test(body))) {
+      const ok = await prisma.review.update({ where: { id: r.id }, data: { approved: false } }).then(() => true).catch(() => false);
+      if (ok) { flagged += 1; affected.add(r.toolId); }
+    }
+  }
+  // Refresh ratings for tools whose reviews changed.
+  for (const toolId of affected) await recomputeToolScores(toolId).catch(() => {});
+  return { scanned: reviews.length, flagged };
+}
+
+/**
+ * Keep listings fresh: re-run AI enrichment on the least-recently-updated
+ * published tools so descriptions, pros/cons and SEO stay current. No-op
+ * without an AI provider. Rotates through the whole catalog over time.
+ */
+export async function refreshStaleTools(batchSize = 4): Promise<number> {
+  if (!aiEnabled()) return 0;
+  const cats = await prisma.category.findMany({ where: { parentId: null }, select: { slug: true } }).catch(() => []);
+  const catSlugs = cats.map((c) => c.slug);
+  const tools = await prisma.tool
+    .findMany({
+      where: { status: "PUBLISHED", deletedAt: null },
+      orderBy: { updatedAt: "asc" },
+      take: batchSize,
+      select: { id: true, name: true, description: true, websiteUrl: true },
+    })
+    .catch(() => [] as { id: string; name: string; description: string; websiteUrl: string }[]);
+
+  let refreshed = 0;
+  for (const t of tools) {
+    // Lightweight refresh: regenerate summary/pros/cons/SEO only.
+    // (We intentionally do NOT re-run enrichTool here — it appends FAQs/tags
+    // and would create duplicates on every pass.)
+    const content = await generateToolContent({
+      name: t.name,
+      description: t.description,
+      websiteUrl: t.websiteUrl,
+      categories: catSlugs,
+    }).catch(() => null);
+    if (!content) {
+      // Still bump updatedAt so the rotation moves past this tool next run.
+      await prisma.tool.update({ where: { id: t.id }, data: { updatedAt: new Date() } }).catch(() => {});
+      continue;
+    }
+    await prisma.tool
+      .update({
+        where: { id: t.id },
+        data: {
+          aiSummary: content.summary,
+          pros: content.pros,
+          cons: content.cons,
+          bestFor: content.bestFor,
+          keywords: content.keywords,
+          seoDesc: content.seoDescription,
+        },
+      })
+      .catch(() => {});
+    refreshed += 1;
+  }
+  return refreshed;
 }

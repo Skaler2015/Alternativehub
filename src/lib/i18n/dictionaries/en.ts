@@ -227,6 +227,8 @@ export const en = {
   "offline.body": "We couldn't reach AlternativeHub. Check your connection — pages you've already visited are still available.",
 
   // ── Homepage section titles (as shown) ──
+  "home.trendingWeek": "Trending This Week",
+  "home.trendingWeek.sub": "The most-viewed tools over the last 7 days",
   "home.editorsChoice": "Editor's Choice",
   "home.editorsChoice.sub": "Hand-picked tools worth switching to",
   "home.aiRecommended": "AI Recommended",

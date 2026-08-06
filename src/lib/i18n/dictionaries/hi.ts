@@ -229,6 +229,8 @@ export const hi: Partial<Dictionary> = {
   "offline.body": "हम AlternativeHub तक नहीं पहुँच पाए। अपना कनेक्शन जाँचें — जो पेज आप पहले देख चुके हैं वे अब भी उपलब्ध हैं।",
 
   // ── Homepage section titles (as shown) ──
+  "home.trendingWeek": "इस हफ़्ते ट्रेंडिंग",
+  "home.trendingWeek.sub": "पिछले 7 दिनों में सबसे ज़्यादा देखे गए tools",
   "home.editorsChoice": "एडिटर की पसंद",
   "home.editorsChoice.sub": "अपनाने लायक चुने हुए टूल्स",
   "home.aiRecommended": "AI द्वारा सुझाए गए",

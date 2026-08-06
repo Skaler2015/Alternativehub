@@ -29,19 +29,25 @@ import {
   getPlatformStats,
   getTestimonials,
 } from "@/lib/data/queries";
+import { auth } from "@/lib/auth";
+import { getTrendingTools, getRecommendedForUser } from "@/lib/recommendations";
 import { getT } from "@/lib/i18n/server";
 import { formatDate, truncate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [data, categories, stats, testimonials, { t }] = await Promise.all([
+  const [data, categories, stats, testimonials, { t }, session, trendingWeek] = await Promise.all([
     getHomeData(),
     getCategories(),
     getPlatformStats(),
     getTestimonials(),
     getT(),
+    auth(),
+    getTrendingTools({ days: 7, limit: 8 }),
   ]);
+  const userId = session?.user?.id;
+  const forYou = userId ? await getRecommendedForUser(userId, 8) : [];
 
   return (
     <div className="space-y-16 pb-8">
@@ -71,6 +77,24 @@ export default async function HomePage() {
           </div>
         </section>
       </FadeIn>
+
+      {forYou.length > 0 && (
+        <ToolSection
+          title={t("home.forYou")}
+          subtitle={t("home.forYou.sub")}
+          tools={forYou}
+          href="/trending"
+          icon={<Sparkles className="size-5 text-primary" />}
+        />
+      )}
+
+      <ToolSection
+        title={t("home.trendingWeek")}
+        subtitle={t("home.trendingWeek.sub")}
+        tools={trendingWeek}
+        href="/trending"
+        icon={<Flame className="size-5 text-orange-500" />}
+      />
 
       <ToolSection
         title={t("home.editorsChoice")}
