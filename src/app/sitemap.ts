@@ -31,7 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const [tools, categories, comparisons, posts, collections, companies, altTools] = await Promise.all([
       prisma.tool.findMany({
         where: { status: "PUBLISHED", deletedAt: null },
-        select: { slug: true, updatedAt: true, logoUrl: true },
+        select: { slug: true, updatedAt: true },
         take: 5000,
       }),
       prisma.category.findMany({ select: { slug: true } }),
@@ -64,8 +64,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: t.updatedAt,
         changeFrequency: "weekly" as const,
         priority: 0.8,
-        // Image sitemap support
-        ...(t.logoUrl ? { images: [t.logoUrl] } : {}),
       })),
       ...altTools.map((t) => ({
         url: `${base}/alternatives/${t.slug}`,
