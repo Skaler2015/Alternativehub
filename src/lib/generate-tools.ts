@@ -11,7 +11,7 @@ import type { PricingModel } from "@prisma/client";
  * Safe by design: no-op without an AI provider; every failure is swallowed so a
  * bad batch never breaks the cron. Nightly enrichment fills richer AI content later.
  */
-export const DAILY_TARGET = 100;
+export const DAILY_TARGET = 150;
 
 const PRICINGS: PricingModel[] = ["FREE", "FREEMIUM", "PAID", "SUBSCRIPTION", "ONE_TIME", "OPEN_SOURCE", "CONTACT"];
 
@@ -76,8 +76,8 @@ export async function generateAndPublishTools(target = DAILY_TARGET): Promise<nu
   const existingSlugs = new Set(existing.map((t) => t.slug));
   const avoidNames = existing.map((t) => t.name);
 
-  const perBatch = 30;
-  const maxRounds = 6; // safety cap → ~180 candidates max
+  const perBatch = 40;
+  const maxRounds = 6; // safety cap → ~240 candidates max per run (fits the 60s cron budget)
   const toInsert: import("@prisma/client").Prisma.ToolCreateManyInput[] = [];
   const usedSlugs = new Set<string>();
 
