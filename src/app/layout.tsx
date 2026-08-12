@@ -5,6 +5,7 @@ import { Providers } from "@/components/layout/providers";
 import { JsonLd } from "@/components/seo/json-ld";
 import { RegisterSW } from "@/components/pwa/register-sw";
 import { AdScript } from "@/components/monetization/ad-script";
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { websiteJsonLd, organizationJsonLd } from "@/lib/seo";
 import { getLocale } from "@/lib/i18n/server";
 import { getFlatDictionary } from "@/lib/i18n";
@@ -71,6 +72,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Providers locale={locale} dict={dict}>{children}</Providers>
         <RegisterSW />
         <AdScript />
+        <GoogleAnalytics />
       </body>
     </html>
   );
