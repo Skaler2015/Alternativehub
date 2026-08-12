@@ -10,7 +10,9 @@ import { buildMetadata, itemListJsonLd } from "@/lib/seo";
 import { SORT_OPTIONS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
+// ISR: cache rendered HTML for 1h so crawlers hit the CDN, not a function+DB
+// query each time (keeps a large, heavily-crawled catalog within usage limits).
+export const revalidate = 3600;
 
 type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<{ sort?: string; page?: string }>;

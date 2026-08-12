@@ -2,7 +2,10 @@ import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { SITE } from "@/lib/constants";
 
-export const dynamic = "force-dynamic";
+// Cache the sitemap for 12h and serve it from the CDN instead of regenerating
+// it (with heavy DB queries) on every crawler request. This is what keeps a
+// large catalog from hammering the DB / hitting the Hobby usage limits.
+export const revalidate = 43200;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = SITE.url;
@@ -48,7 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       prisma.company.findMany({
         where: { tools: { some: { status: "PUBLISHED", deletedAt: null } } },
         select: { slug: true, createdAt: true },
-        take: 3000,
+        take: 1500,
       }),
       // Every published tool now has a content-rich /alternatives page (C1),
       // so include them all (most-popular first) for "<tool> alternatives".
@@ -56,7 +59,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         where: { status: "PUBLISHED", deletedAt: null },
         select: { slug: true, updatedAt: true },
         orderBy: { popularityScore: "desc" },
-        take: 4000,
+        take: 2500,
       }),
       // Alternative edges → programmatic "X vs Y" comparison URLs (C2).
       prisma.alternative.findMany({
@@ -66,7 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         },
         select: { source: { select: { slug: true } }, target: { select: { slug: true } } },
         orderBy: { matchScore: "desc" },
-        take: 8000,
+        take: 3000,
       }),
     ]);
 
@@ -79,7 +82,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       if (vsSeen.has(pair)) continue;
       vsSeen.add(pair);
       vsSlugs.push(pair);
-      if (vsSlugs.length >= 4000) break;
+      if (vsSlugs.length >= 2000) break;
     }
 
     return [
