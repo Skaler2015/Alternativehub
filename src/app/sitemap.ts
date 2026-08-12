@@ -28,7 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    const [tools, categories, comparisons, posts, collections, companies, altTools] = await Promise.all([
+    const [tools, categories, comparisons, posts, collections, companies, altTools, vsPairs] = await Promise.all([
       prisma.tool.findMany({
         where: { status: "PUBLISHED", deletedAt: null },
         select: { slug: true, updatedAt: true },
@@ -50,12 +50,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         select: { slug: true, createdAt: true },
         take: 3000,
       }),
+      // Every published tool now has a content-rich /alternatives page (C1),
+      // so include them all (most-popular first) for "<tool> alternatives".
       prisma.tool.findMany({
-        where: { status: "PUBLISHED", deletedAt: null, alternativesFrom: { some: {} } },
+        where: { status: "PUBLISHED", deletedAt: null },
         select: { slug: true, updatedAt: true },
-        take: 2000,
+        orderBy: { popularityScore: "desc" },
+        take: 4000,
+      }),
+      // Alternative edges → programmatic "X vs Y" comparison URLs (C2).
+      prisma.alternative.findMany({
+        where: {
+          source: { status: "PUBLISHED", deletedAt: null },
+          target: { status: "PUBLISHED", deletedAt: null },
+        },
+        select: { source: { select: { slug: true } }, target: { select: { slug: true } } },
+        orderBy: { matchScore: "desc" },
+        take: 8000,
       }),
     ]);
+
+    // Build unique, sorted "a-vs-b" comparison slugs (the compare page renders
+    // these dynamically) so Google can discover and index them.
+    const vsSeen = new Set<string>();
+    const vsSlugs: string[] = [];
+    for (const e of vsPairs) {
+      const pair = [e.source.slug, e.target.slug].sort().join("-vs-");
+      if (vsSeen.has(pair)) continue;
+      vsSeen.add(pair);
+      vsSlugs.push(pair);
+      if (vsSlugs.length >= 4000) break;
+    }
 
     return [
       ...staticPages,
@@ -81,6 +106,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: c.updatedAt,
         changeFrequency: "weekly" as const,
         priority: 0.75,
+      })),
+      ...vsSlugs.map((s) => ({
+        url: `${base}/compare/${s}`,
+        changeFrequency: "weekly" as const,
+        priority: 0.65,
       })),
       ...posts.map((p) => ({
         url: `${base}/blog/${p.slug}`,

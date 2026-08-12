@@ -442,6 +442,32 @@ export async function getAlternativesPage(slug: string) {
           },
         },
       });
+      if (!tool) return null;
+
+      // Never let an alternatives page be thin: if a tool has few (or no)
+      // explicitly-mapped alternatives yet, fill the list with the best tools
+      // from the same category. This keeps every "<tool> alternatives" page
+      // content-rich and rankable, even before the nightly linker runs.
+      const MIN = 8;
+      if (tool.alternativesFrom.length < MIN) {
+        type AltItem = (typeof tool.alternativesFrom)[number];
+        const excludeIds = [tool.id, ...tool.alternativesFrom.map((a) => a.target.id)];
+        const fillers = await prisma.tool.findMany({
+          where: { ...PUBLISHED, categoryId: tool.categoryId, id: { notIn: excludeIds } },
+          orderBy: [{ rating: "desc" }, { popularityScore: "desc" }, { reviewCount: "desc" }],
+          take: MIN - tool.alternativesFrom.length + 4,
+          select: { ...toolCardSelect, pros: true, cons: true, aiSummary: true },
+        });
+        const synthetic = fillers.map(
+          (t) =>
+            ({
+              id: `cat-${t.id}`,
+              matchScore: Math.min(90, 55 + Math.round(t.rating * 5)),
+              target: t,
+            }) as unknown as AltItem,
+        );
+        tool.alternativesFrom = [...tool.alternativesFrom, ...synthetic];
+      }
       return tool;
     }),
   );
