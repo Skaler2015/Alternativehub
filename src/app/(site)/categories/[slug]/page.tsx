@@ -19,11 +19,12 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { slug } = await params;
   const category = await getCategoryBySlug(slug);
   if (!category) return { title: "Category not found" };
+  const year = new Date().getFullYear();
   return buildMetadata({
-    title: category.seoTitle ?? `Best ${category.name} — Top Tools & Alternatives`,
+    title: category.seoTitle ?? `${category._count.tools}+ Best ${category.name} in ${year} (Free & Paid)`,
     description:
       category.seoDesc ??
-      `Discover the best ${category.name.toLowerCase()} of ${new Date().getFullYear()}. Compare ${category._count.tools}+ tools by rating, pricing and features on AlternativeHub.`,
+      `Discover the best ${category.name.toLowerCase()} of ${year}. Compare ${category._count.tools}+ tools by rating, pricing and features on AlternativeHub.`,
     path: `/categories/${category.slug}`,
   });
 }

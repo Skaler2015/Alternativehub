@@ -45,6 +45,7 @@ import { RatingBreakdown } from "@/components/tools/rating-breakdown";
 import { DealCard } from "@/components/deals/deal-card";
 import { getDealsForTool } from "@/lib/data/deals";
 import { buildMetadata, faqJsonLd, softwareAppJsonLd } from "@/lib/seo";
+import { buildAutoFaqs } from "@/lib/tool-faq";
 import { PRICING_LABELS } from "@/lib/constants";
 import { formatNumber } from "@/lib/utils";
 
@@ -57,11 +58,18 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const tool = await getToolBySlug(slug);
   if (!tool) return { title: "Tool not found" };
 
+  const year = new Date().getFullYear();
+  const altCount = tool.alternativesFrom.length;
+  const base = tool.seoTitle ?? `${tool.name} — Reviews, Pricing & Best Alternatives`;
+  // Add the current year for freshness (a strong CTR signal) if not already there.
+  const title = base.includes(String(year)) ? base : `${base} (${year})`;
+  const description =
+    tool.seoDesc ??
+    `${tool.name}: ${tool.tagline ?? ""} See ${altCount > 0 ? `the ${altCount} best alternatives, ` : ""}real reviews, pricing, and pros & cons — compared for ${year}.`;
+
   return buildMetadata({
-    title: tool.seoTitle ?? `${tool.name} — Reviews, Pricing & Alternatives`,
-    description:
-      tool.seoDesc ??
-      `${tool.name}: ${tool.tagline ?? ""} Compare features, pricing, pros & cons, and discover the best ${tool.name} alternatives.`,
+    title,
+    description,
     path: `/tools/${tool.slug}`,
     image: tool.logoUrl ?? undefined,
     keywords: tool.keywords,
@@ -110,6 +118,24 @@ export default async function ToolPage({ params }: { params: Params }) {
   void bumpViewCount(tool.id);
 
   const alternatives = tool.alternativesFrom.map((a) => a.target);
+
+  // Deterministic FAQs for every tool (captures "is X free / open source / X
+  // alternatives" search intent) merged with any AI-generated FAQs, de-duped.
+  const autoFaqs = buildAutoFaqs({
+    name: tool.name,
+    pricingModel: tool.pricingModel,
+    isOpenSource: tool.isOpenSource,
+    platforms: tool.platforms.map((tp) => tp.platform.name),
+    categoryName: tool.category?.name,
+    alternatives: alternatives.map((a) => a.name),
+  });
+  const seenFaq = new Set(tool.faqs.map((f) => f.question.toLowerCase().trim()));
+  const allFaqs = [
+    ...tool.faqs.map((f) => ({ id: f.id, question: f.question, answer: f.answer })),
+    ...autoFaqs
+      .filter((f) => !seenFaq.has(f.question.toLowerCase().trim()))
+      .map((f, i) => ({ id: `auto-${i}`, question: f.question, answer: f.answer })),
+  ];
   const outLink = tool.affiliateUrl ?? tool.websiteUrl;
 
   return (
@@ -127,7 +153,7 @@ export default async function ToolPage({ params }: { params: Params }) {
             category: tool.category.name,
             websiteUrl: tool.websiteUrl,
           }),
-          ...(tool.faqs.length ? [faqJsonLd(tool.faqs)] : []),
+          ...(allFaqs.length ? [faqJsonLd(allFaqs)] : []),
         ]}
       />
       <TrackView type="TOOL_VIEW" toolId={tool.id} />
@@ -398,11 +424,11 @@ export default async function ToolPage({ params }: { params: Params }) {
             </section>
           )}
 
-          {tool.faqs.length > 0 && (
+          {allFaqs.length > 0 && (
             <section>
               <h2 className="text-xl font-semibold">Frequently Asked Questions</h2>
               <Accordion type="single" collapsible className="mt-2">
-                {tool.faqs.map((faq) => (
+                {allFaqs.map((faq) => (
                   <AccordionItem key={faq.id} value={faq.id}>
                     <AccordionTrigger>{faq.question}</AccordionTrigger>
                     <AccordionContent>{faq.answer}</AccordionContent>
