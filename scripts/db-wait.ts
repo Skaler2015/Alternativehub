@@ -17,6 +17,17 @@ async function main() {
     try {
       await prisma.$queryRaw`SELECT 1`;
       console.log(`[db-wait] Database reachable on attempt ${i}.`);
+      // Neon may answer a trivial SELECT while compute is still spinning up,
+      // so the following `migrate deploy` can still time out (P1002). Warm the
+      // compute with a few more pings before handing off to the migration.
+      for (let w = 0; w < 3; w++) {
+        try {
+          await prisma.$queryRaw`SELECT 1`;
+        } catch {
+          /* ignore — the retrying migrate step will handle a cold DB */
+        }
+        await new Promise((r) => setTimeout(r, 1000));
+      }
       await prisma.$disconnect().catch(() => {});
       return;
     } catch {
