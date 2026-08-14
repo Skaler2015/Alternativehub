@@ -14,7 +14,9 @@ import { emailEnabled, sendWeeklyDigest } from "@/lib/email";
 import { invalidate, invalidatePrefix, CACHE_KEYS } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// 300s (Vercel Pro) gives the AI content refresh room to rewrite a batch of
+// thin, templated descriptions into unique content each run.
+export const maxDuration = 300;
 
 /**
  * Daily maintenance cron (triggered by Vercel Cron).
@@ -126,10 +128,11 @@ export async function GET(req: Request) {
     summary.spamError = String(err);
   }
 
-  // 5c. Keep the oldest listings fresh with a light AI re-enrichment.
+  // 5c. Rewrite thin/templated descriptions into unique AI content (most
+  // popular tools first), then keep older listings fresh.
   if (aiEnabled()) {
     try {
-      summary.refreshedStale = await refreshStaleTools(4);
+      summary.refreshedStale = await refreshStaleTools(15);
     } catch (err) {
       summary.refreshError = String(err);
     }

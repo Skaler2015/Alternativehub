@@ -195,6 +195,7 @@ export async function aiJson<T>(
 
 export type GeneratedToolContent = {
   summary: string;
+  longDescription: string;
   pros: string[];
   cons: string[];
   bestFor: string[];
@@ -210,6 +211,11 @@ const TOOL_CONTENT_SCHEMA = {
   type: "object",
   properties: {
     summary: { type: "string", description: "Neutral 2-3 sentence summary of the tool" },
+    longDescription: {
+      type: "string",
+      description:
+        "A unique, in-depth overview of the tool: 150-250 words, 2-3 short paragraphs. Explain what it does, who it's for, its standout capabilities and typical use cases. Factual and specific — do not repeat the summary verbatim, do not invent features, no marketing fluff.",
+    },
     pros: { type: "array", items: { type: "string" }, description: "4-6 concrete strengths" },
     cons: { type: "array", items: { type: "string" }, description: "3-5 honest weaknesses" },
     bestFor: { type: "array", items: { type: "string" }, description: "3-4 ideal user personas" },
@@ -230,7 +236,7 @@ const TOOL_CONTENT_SCHEMA = {
     suggestedCategory: { type: "string", description: "Best-fit category slug from the provided list" },
   },
   required: [
-    "summary", "pros", "cons", "bestFor", "tags", "faqs",
+    "summary", "longDescription", "pros", "cons", "bestFor", "tags", "faqs",
     "seoTitle", "seoDescription", "keywords", "suggestedCategory",
   ],
   additionalProperties: false,

@@ -319,22 +319,43 @@ export async function detectSpamReviews(batchSize = 300): Promise<{ scanned: num
  * published tools so descriptions, pros/cons and SEO stay current. No-op
  * without an AI provider. Rotates through the whole catalog over time.
  */
-export async function refreshStaleTools(batchSize = 4): Promise<number> {
+// Marker left by the bulk-catalog template — identifies thin, near-duplicate
+// descriptions that badly need unique AI content to become indexable.
+const TEMPLATED_MARKER = "the best alternatives on AlternativeHub";
+
+export async function refreshStaleTools(batchSize = 6): Promise<number> {
   if (!aiEnabled()) return 0;
   const cats = await prisma.category.findMany({ where: { parentId: null }, select: { slug: true } }).catch(() => []);
   const catSlugs = cats.map((c) => c.slug);
-  const tools = await prisma.tool
+  type Row = { id: string; name: string; description: string; websiteUrl: string };
+
+  // Priority 1: tools that still have the bulk template description, most
+  // popular first — these get the biggest SEO lift from unique content.
+  let tools = await prisma.tool
     .findMany({
-      where: { status: "PUBLISHED", deletedAt: null },
-      orderBy: { updatedAt: "asc" },
+      where: { status: "PUBLISHED", deletedAt: null, description: { contains: TEMPLATED_MARKER } },
+      orderBy: { popularityScore: "desc" },
       take: batchSize,
       select: { id: true, name: true, description: true, websiteUrl: true },
     })
-    .catch(() => [] as { id: string; name: string; description: string; websiteUrl: string }[]);
+    .catch(() => [] as Row[]);
+
+  // Priority 2 (once none are templated): normal freshness rotation.
+  if (tools.length === 0) {
+    tools = await prisma.tool
+      .findMany({
+        where: { status: "PUBLISHED", deletedAt: null },
+        orderBy: { updatedAt: "asc" },
+        take: batchSize,
+        select: { id: true, name: true, description: true, websiteUrl: true },
+      })
+      .catch(() => [] as Row[]);
+  }
 
   let refreshed = 0;
   for (const t of tools) {
-    // Lightweight refresh: regenerate summary/pros/cons/SEO only.
+    // Regenerate the listing content — including a unique long description that
+    // replaces the templated one (the core fix for thin/duplicate content).
     // (We intentionally do NOT re-run enrichTool here — it appends FAQs/tags
     // and would create duplicates on every pass.)
     const content = await generateToolContent({
@@ -348,10 +369,15 @@ export async function refreshStaleTools(batchSize = 4): Promise<number> {
       await prisma.tool.update({ where: { id: t.id }, data: { updatedAt: new Date() } }).catch(() => {});
       continue;
     }
+    const longDesc =
+      typeof content.longDescription === "string" && content.longDescription.trim().length >= 80
+        ? content.longDescription.trim()
+        : null;
     await prisma.tool
       .update({
         where: { id: t.id },
         data: {
+          ...(longDesc ? { description: longDesc } : {}),
           aiSummary: content.summary,
           pros: content.pros,
           cons: content.cons,

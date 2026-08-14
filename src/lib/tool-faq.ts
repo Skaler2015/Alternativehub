@@ -29,10 +29,29 @@ export function buildAutoFaqs(input: {
   platforms: string[];
   categoryName?: string | null;
   alternatives: string[];
+  tagline?: string | null;
+  bestFor?: string[];
 }): AutoFaq[] {
-  const { name, pricingModel, isOpenSource, platforms, categoryName, alternatives } = input;
+  const { name, pricingModel, isOpenSource, platforms, categoryName, alternatives, tagline, bestFor } = input;
   const cat = categoryName ? categoryName.toLowerCase() : "software";
   const faqs: AutoFaq[] = [];
+
+  // What is it? (captures "what is X" — a very common informational query)
+  faqs.push({
+    question: `What is ${name}?`,
+    answer: tagline
+      ? `${name} is a ${cat} tool — ${tagline.replace(/\.$/, "")}. You can compare it with the best alternatives, pricing and real reviews on AlternativeHub.`
+      : `${name} is a ${cat} tool. Compare its features, pricing and the best alternatives on AlternativeHub.`,
+  });
+
+  // What is it used for? (informational intent)
+  faqs.push({
+    question: `What is ${name} used for?`,
+    answer:
+      bestFor && bestFor.length > 0
+        ? `${name} is mainly used by ${bestFor.slice(0, 3).join(", ")}. It's a ${cat} tool${tagline ? ` that helps you ${tagline.charAt(0).toLowerCase() + tagline.slice(1).replace(/\.$/, "")}` : ""}.`
+        : `${name} is a ${cat} tool${tagline ? ` that helps you ${tagline.charAt(0).toLowerCase() + tagline.slice(1).replace(/\.$/, "")}` : ""}. See its key features and use cases on AlternativeHub.`,
+  });
 
   // Is it free?
   const isFree = pricingModel === "FREE" || pricingModel === "OPEN_SOURCE";
@@ -75,6 +94,42 @@ export function buildAutoFaqs(input: {
         ? `Popular ${name} alternatives include ${alternatives.slice(0, 5).join(", ")}. Compare them side by side — features, pricing and reviews — on AlternativeHub.`
         : `Explore the best ${name} alternatives in ${cat} on AlternativeHub, ranked by real users and AI.`,
   });
+
+  // Free trial
+  if (!isFree) {
+    faqs.push({
+      question: `Does ${name} have a free trial?`,
+      answer:
+        pricingModel === "FREEMIUM"
+          ? `${name} offers a free plan you can use without paying, plus paid tiers. Check its website for any additional trial of the premium features.`
+          : `Many paid ${cat} tools like ${name} offer a free trial — check its official website for the latest offer, or compare free ${name} alternatives on AlternativeHub.`,
+    });
+  }
+
+  // Self-hosting (only meaningful for open-source tools)
+  if (isOpenSource) {
+    faqs.push({
+      question: `Can I self-host ${name}?`,
+      answer: `Yes — because ${name} is open source, you can self-host it on your own server for full control over your data. See its documentation for setup instructions.`,
+    });
+  }
+
+  // Comparison with the top alternative (captures "X vs Y" intent)
+  if (alternatives.length > 0) {
+    const top = alternatives[0];
+    faqs.push({
+      question: `Is ${name} better than ${top}?`,
+      answer: `${name} and ${top} are both strong choices in ${cat}. The best pick depends on your needs, budget and platforms. Compare ${name} vs ${top} side by side — features, pricing, pros and cons — on AlternativeHub.`,
+    });
+  }
+
+  // Good for a specific audience (captures "X for <persona>" intent)
+  if (bestFor && bestFor.length > 0) {
+    faqs.push({
+      question: `Is ${name} good for ${bestFor[0].toLowerCase()}?`,
+      answer: `Yes — ${name} is well suited for ${bestFor[0].toLowerCase()}${bestFor[1] ? ` and ${bestFor[1].toLowerCase()}` : ""}. Read real reviews and see how it compares to alternatives on AlternativeHub.`,
+    });
+  }
 
   // Trust
   faqs.push({

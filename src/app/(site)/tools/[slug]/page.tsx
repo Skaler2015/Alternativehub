@@ -7,17 +7,20 @@ import {
   BookOpen,
   Briefcase,
   Building2,
+  CalendarClock,
   Check,
   Download,
   Globe,
   History,
   Minus,
   Plug,
+  Rocket,
   Scale,
   ShieldCheck,
   Sparkles,
   Tag as TagIcon,
   Target,
+  ThumbsUp,
   Users,
   X,
 } from "lucide-react";
@@ -32,6 +35,7 @@ import { ToolCard } from "@/components/tools/tool-card";
 import { RatingStars } from "@/components/tools/rating-stars";
 import { ScoreRing } from "@/components/tools/score-ring";
 import { ToolActions } from "@/components/tools/tool-actions";
+import { ComparisonTable } from "@/components/tools/comparison-table";
 import { ReviewSection } from "@/components/tools/review-section";
 import { TrackView } from "@/components/analytics/track-view";
 import { SaveToCollection } from "@/components/collections/save-to-collection";
@@ -128,6 +132,8 @@ export default async function ToolPage({ params }: { params: Params }) {
     platforms: tool.platforms.map((tp) => tp.platform.name),
     categoryName: tool.category?.name,
     alternatives: alternatives.map((a) => a.name),
+    tagline: tool.tagline,
+    bestFor: tool.bestFor,
   });
   const seenFaq = new Set(tool.faqs.map((f) => f.question.toLowerCase().trim()));
   const allFaqs = [
@@ -137,6 +143,50 @@ export default async function ToolPage({ params }: { params: Params }) {
       .map((f, i) => ({ id: `auto-${i}`, question: f.question, answer: f.answer })),
   ];
   const outLink = tool.affiliateUrl ?? tool.websiteUrl;
+
+  // Deterministic TL;DR "verdict" — unique per tool, good for featured snippets.
+  const pricingPhrase =
+    tool.pricingModel === "FREE"
+      ? "free"
+      : tool.pricingModel === "OPEN_SOURCE"
+        ? "free and open-source"
+        : tool.pricingModel === "FREEMIUM"
+          ? "freemium (free plan + paid tiers)"
+          : tool.pricingModel === "SUBSCRIPTION"
+            ? "subscription-based"
+            : "paid";
+  const verdictText = `${tool.name} is a ${pricingPhrase} ${tool.category.name.toLowerCase()} tool${
+    tool.bestFor.length ? `, best suited for ${tool.bestFor.slice(0, 3).join(", ").toLowerCase()}` : ""
+  }.${
+    tool.reviewCount > 0
+      ? ` It holds a ${tool.rating.toFixed(1)}/5 rating from ${tool.reviewCount} review${tool.reviewCount > 1 ? "s" : ""}.`
+      : ""
+  } Below you'll find its key features, pricing, pros & cons${
+    alternatives.length ? `, and the ${alternatives.length} best ${tool.name} alternatives` : ""
+  } — compared in one place.`;
+
+  // Deterministic "how to get started" steps.
+  const platformNames = tool.platforms.map((tp) => tp.platform.name);
+  const startSteps: string[] = [
+    `Visit the official ${tool.name} website using the button above.`,
+    tool.pricingModel === "FREE" || tool.pricingModel === "OPEN_SOURCE"
+      ? `Create a free account — ${tool.name} is ${pricingPhrase}, so there's nothing to pay to get going.`
+      : tool.pricingModel === "FREEMIUM"
+        ? `Sign up for the free plan first, then upgrade only if you need the paid features.`
+        : `Start a free trial if available, or pick the plan that fits your needs.`,
+    platformNames.length
+      ? `Install or open ${tool.name} on ${platformNames.slice(0, 4).join(", ")} and set it up for your workflow.`
+      : `Open ${tool.name} in your browser and set it up for your workflow.`,
+    alternatives.length
+      ? `Not the right fit? Compare the best ${tool.name} alternatives before you commit.`
+      : `Explore similar ${tool.category.name.toLowerCase()} tools on AlternativeHub if you want more options.`,
+  ];
+
+  const updatedLabel = new Date(tool.updatedAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -250,6 +300,25 @@ export default async function ToolPage({ params }: { params: Params }) {
         <ScoreRing score={tool.aiScore} label="AI Score" />
         <ScoreRing score={tool.popularityScore} label="Popularity" />
         <ScoreRing score={tool.trustScore} label="Trust Score" />
+      </div>
+
+      {/* ── Quick verdict (TL;DR) ── */}
+      <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
+          <ThumbsUp className="size-3.5" /> The verdict
+        </p>
+        <p className="mt-1.5 text-sm leading-relaxed">{verdictText}</p>
+        {tool.bestFor.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">Best for:</span>
+            {tool.bestFor.slice(0, 4).map((persona) => (
+              <Badge key={persona} variant="secondary">{persona}</Badge>
+            ))}
+          </div>
+        )}
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <CalendarClock className="size-3.5" /> Last updated: {updatedLabel}
+        </p>
       </div>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_320px]">
@@ -423,6 +492,37 @@ export default async function ToolPage({ params }: { params: Params }) {
               </div>
             </section>
           )}
+
+          {alternatives.length > 0 && (
+            <ComparisonTable
+              tool={{
+                slug: tool.slug,
+                name: tool.name,
+                logoUrl: tool.logoUrl,
+                rating: tool.rating,
+                reviewCount: tool.reviewCount,
+                pricingModel: tool.pricingModel,
+                isOpenSource: tool.isOpenSource,
+              }}
+              alternatives={alternatives}
+            />
+          )}
+
+          <section>
+            <h2 className="flex items-center gap-2 text-xl font-semibold">
+              <Rocket className="size-5 text-primary" /> How to get started with {tool.name}
+            </h2>
+            <ol className="mt-4 space-y-3">
+              {startSteps.map((step, i) => (
+                <li key={i} className="flex gap-3 text-sm">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                    {i + 1}
+                  </span>
+                  <span className="text-muted-foreground">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
 
           {allFaqs.length > 0 && (
             <section>
