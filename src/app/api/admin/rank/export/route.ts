@@ -10,13 +10,46 @@ const esc = (v: unknown) => {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-/** Export current rankings as CSV. */
+function csvResponse(csv: string, name: string): Response {
+  return new Response(csv, {
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${name}-${new Date().toISOString().slice(0, 10)}.csv"`,
+    },
+  });
+}
+
+/** Export current rankings, or full ranking history (backup), as CSV. */
 export async function GET(req: Request) {
   const user = await getApiUser();
   if (!user || (user.role !== "ADMIN" && user.role !== "MODERATOR")) {
     return new Response("Unauthorized", { status: 401 });
   }
   const project = await getOrCreateProject();
+  const scope = new URL(req.url).searchParams.get("scope");
+
+  // ── Full history backup ──
+  if (scope === "history") {
+    const hist = await prisma.rankHistory.findMany({
+      where: { projectId: project.id },
+      orderBy: { checkedAt: "desc" },
+      take: 200000,
+      include: { keyword: { select: { keyword: true } } },
+    });
+    const head = ["Keyword", "Rank", "Ranking URL", "Title", "Search Engine", "Country", "Device", "Provider", "Status", "Checked At"];
+    const lines = [head.join(",")];
+    for (const h of hist) {
+      lines.push(
+        [
+          esc(h.keyword?.keyword ?? ""), h.rank ?? "", esc(h.rankingUrl ?? ""), esc(h.rankingTitle ?? ""),
+          esc(h.searchEngine), esc(h.country), esc(h.device), esc(h.provider), esc(h.status),
+          esc(h.checkedAt.toISOString()),
+        ].join(","),
+      );
+    }
+    return csvResponse(lines.join("\n"), "rank-history");
+  }
+
   const rows = await prisma.rankKeyword.findMany({
     where: { projectId: project.id },
     orderBy: { currentRank: { sort: "asc", nulls: "last" } },

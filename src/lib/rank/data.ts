@@ -194,6 +194,111 @@ export async function addKeywordsBulk(
   return { added: toCreate.length, skipped: seen.size - toCreate.length };
 }
 
+/** Upsert keyword rows that each carry their own target URL / group (CSV import). */
+export async function addKeywordRows(
+  projectId: string,
+  rows: { keyword: string; targetUrl?: string | null; groupName?: string | null }[],
+): Promise<{ added: number; skipped: number }> {
+  const seen = new Map<string, { keyword: string; targetUrl: string | null; groupName: string | null }>();
+  for (const r of rows) {
+    const display = (r.keyword ?? "").trim().replace(/\s+/g, " ");
+    if (!display) continue;
+    const norm = normalizeKeyword(display);
+    if (!seen.has(norm)) {
+      seen.set(norm, {
+        keyword: display,
+        targetUrl: r.targetUrl?.trim() || null,
+        groupName: r.groupName?.trim() || null,
+      });
+    }
+  }
+  if (seen.size === 0) return { added: 0, skipped: 0 };
+  const existing = await prisma.rankKeyword.findMany({
+    where: { projectId, normalized: { in: [...seen.keys()] } },
+    select: { normalized: true },
+  });
+  const have = new Set(existing.map((e) => e.normalized));
+  const toCreate = [...seen.entries()]
+    .filter(([norm]) => !have.has(norm))
+    .map(([normalized, v]) => ({ projectId, normalized, keyword: v.keyword, targetUrl: v.targetUrl, groupName: v.groupName }));
+  if (toCreate.length) await prisma.rankKeyword.createMany({ data: toCreate, skipDuplicates: true });
+  return { added: toCreate.length, skipped: seen.size - toCreate.length };
+}
+
+// ── Charts & insights ───────────────────────────────────────────────────────
+export async function dailyChecksSeries(days = 14): Promise<{ date: string; views: number }[]> {
+  const rows = await prisma.rankApiUsage.findMany({ orderBy: { date: "desc" }, take: days });
+  return rows.reverse().map((r) => ({ date: r.date, views: r.requests }));
+}
+
+export async function rankingDistribution(projectId: string) {
+  const base: Prisma.RankKeywordWhereInput = { projectId, active: true };
+  const [t3, t10, t20, t50, t100, notRanking] = await Promise.all([
+    prisma.rankKeyword.count({ where: { ...base, currentRank: { lte: 3 } } }),
+    prisma.rankKeyword.count({ where: { ...base, currentRank: { gte: 4, lte: 10 } } }),
+    prisma.rankKeyword.count({ where: { ...base, currentRank: { gte: 11, lte: 20 } } }),
+    prisma.rankKeyword.count({ where: { ...base, currentRank: { gte: 21, lte: 50 } } }),
+    prisma.rankKeyword.count({ where: { ...base, currentRank: { gte: 51, lte: 100 } } }),
+    prisma.rankKeyword.count({ where: { ...base, currentRank: null, lastCheckedAt: { not: null } } }),
+  ]);
+  return [
+    { label: "1-3", value: t3 },
+    { label: "4-10", value: t10 },
+    { label: "11-20", value: t20 },
+    { label: "21-50", value: t50 },
+    { label: "51-100", value: t100 },
+    { label: "Not Ranking", value: notRanking },
+  ];
+}
+
+export type RankInsights = {
+  enteredTop10: number;
+  leftTop10: number;
+  enteredTop20: number;
+  leftTop20: number;
+  gaining: number;
+  losing: number;
+  notCheckedRecently: number;
+  withErrors: number;
+  gainingSample: { id: string; keyword: string; previousRank: number | null; currentRank: number | null }[];
+  losingSample: { id: string; keyword: string; previousRank: number | null; currentRank: number | null }[];
+  errorSample: { id: string; keyword: string; lastError: string | null }[];
+};
+
+export async function computeInsights(projectId: string): Promise<RankInsights> {
+  const base: Prisma.RankKeywordWhereInput = { projectId, active: true };
+  const cutoff = new Date(Date.now() - 7 * 86400000);
+  const [
+    enteredTop10, leftTop10, enteredTop20, leftTop20, gaining, losing, notCheckedRecently, withErrors,
+    gainingSample, losingSample, errorSample,
+  ] = await Promise.all([
+    prisma.rankKeyword.count({ where: { ...base, currentRank: { lte: 10 }, OR: [{ previousRank: null }, { previousRank: { gt: 10 } }] } }),
+    prisma.rankKeyword.count({ where: { ...base, previousRank: { lte: 10 }, OR: [{ currentRank: null }, { currentRank: { gt: 10 } }] } }),
+    prisma.rankKeyword.count({ where: { ...base, currentRank: { lte: 20 }, OR: [{ previousRank: null }, { previousRank: { gt: 20 } }] } }),
+    prisma.rankKeyword.count({ where: { ...base, previousRank: { lte: 20 }, OR: [{ currentRank: null }, { currentRank: { gt: 20 } }] } }),
+    prisma.rankKeyword.count({ where: { ...base, lastStatus: "Improved" } }),
+    prisma.rankKeyword.count({ where: { ...base, lastStatus: "Dropped" } }),
+    prisma.rankKeyword.count({ where: { ...base, OR: [{ lastCheckedAt: null }, { lastCheckedAt: { lt: cutoff } }] } }),
+    prisma.rankKeyword.count({ where: { ...base, lastError: { not: null } } }),
+    prisma.rankKeyword.findMany({ where: { ...base, lastStatus: "Improved" }, orderBy: { currentRank: "asc" }, take: 10, select: { id: true, keyword: true, previousRank: true, currentRank: true } }),
+    prisma.rankKeyword.findMany({ where: { ...base, lastStatus: "Dropped" }, orderBy: { currentRank: "desc" }, take: 10, select: { id: true, keyword: true, previousRank: true, currentRank: true } }),
+    prisma.rankKeyword.findMany({ where: { ...base, lastError: { not: null } }, orderBy: { updatedAt: "desc" }, take: 10, select: { id: true, keyword: true, lastError: true } }),
+  ]);
+  return { enteredTop10, leftTop10, enteredTop20, leftTop20, gaining, losing, notCheckedRecently, withErrors, gainingSample, losingSample, errorSample };
+}
+
+/** Data-retention cleanup — delete history older than the retention window.
+ *  Never touches today's records. */
+export async function cleanupHistory(projectId: string, retentionDays: number): Promise<number> {
+  if (!retentionDays || retentionDays >= 3650) return 0; // "forever"
+  const cutoff = new Date(Date.now() - retentionDays * 86400000);
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const effective = cutoff < startOfToday ? cutoff : startOfToday;
+  const res = await prisma.rankHistory.deleteMany({ where: { projectId, checkedAt: { lt: effective } } });
+  return res.count;
+}
+
 // ── Job queue ───────────────────────────────────────────────────────────────
 /** Enqueue checks for the given keyword ids (or all active), skipping keywords
  *  that already have an in-flight job. Returns how many jobs were created. */

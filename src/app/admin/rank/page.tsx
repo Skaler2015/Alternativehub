@@ -3,25 +3,36 @@ import {
   AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
+  Download,
+  FileUp,
   Gauge,
   KeyRound,
+  Lightbulb,
   ListChecks,
   Minus,
+  ScrollText,
   Search,
   Settings,
   TrendingUp,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { dashboardStats, getOrCreateProject } from "@/lib/rank/data";
+import { dailyChecksSeries, dashboardStats, getOrCreateProject, rankingDistribution } from "@/lib/rank/data";
 import { getRankProvider } from "@/lib/rank/providers";
 import { CheckAllPanel } from "@/components/admin/rank/check-all";
+import { MiniBarChart } from "@/components/admin/mini-bar-chart";
 
 export const dynamic = "force-dynamic";
 
 export default async function RankDashboard() {
   const project = await getOrCreateProject();
-  const [stats, provider] = await Promise.all([dashboardStats(project.id, project.timezone), getRankProvider()]);
+  const [stats, provider, distribution, dailyChecks] = await Promise.all([
+    dashboardStats(project.id, project.timezone),
+    getRankProvider(),
+    rankingDistribution(project.id),
+    dailyChecksSeries(14),
+  ]);
+  const distMax = Math.max(1, ...distribution.map((d) => d.value));
 
   const rankCards = [
     { label: "Total Keywords", value: stats.total, tone: "neutral", href: "/admin/rank/rankings" },
@@ -63,6 +74,15 @@ export default async function RankDashboard() {
           </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href="/admin/rank/rankings"><Search className="size-4" /> Rankings</Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/admin/rank/insights"><Lightbulb className="size-4" /> Insights</Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/admin/rank/import"><FileUp className="size-4" /> Import</Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/admin/rank/logs"><ScrollText className="size-4" /> Logs</Link>
           </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href="/admin/rank/settings"><Settings className="size-4" /> Settings</Link>
@@ -113,6 +133,39 @@ export default async function RankDashboard() {
             </Card>
           </Link>
         ))}
+      </div>
+
+      {/* Charts */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Ranking distribution</h2>
+              <a href="/api/admin/rank/export?scope=history" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
+                <Download className="size-3.5" /> Backup history
+              </a>
+            </div>
+            <div className="mt-4 space-y-2">
+              {distribution.map((d) => (
+                <div key={d.label} className="flex items-center gap-3">
+                  <span className="w-20 shrink-0 text-xs text-muted-foreground">{d.label}</span>
+                  <div className="h-3 flex-1 overflow-hidden rounded-full bg-border">
+                    <div className="h-full rounded-full bg-gradient-to-r from-indigo-500/70 to-violet-500" style={{ width: `${Math.round((d.value / distMax) * 100)}%` }} />
+                  </div>
+                  <span className="w-10 shrink-0 text-right text-xs font-semibold tabular-nums">{d.value}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-5">
+            <h2 className="text-sm font-semibold">Daily rank checks (14 days)</h2>
+            <div className="mt-4">
+              <MiniBarChart data={dailyChecks} height={160} />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Run checks + API usage */}

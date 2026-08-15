@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getApiUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
-import { addKeywordsBulk, getOrCreateProject } from "@/lib/rank/data";
+import { addKeywordRows, addKeywordsBulk, getOrCreateProject } from "@/lib/rank/data";
 import { parseBulkKeywords } from "@/lib/rank/normalize";
 
 export const dynamic = "force-dynamic";
@@ -16,9 +16,22 @@ async function guard() {
 export async function POST(req: Request) {
   if (!(await guard())) return NextResponse.json({ ok: false }, { status: 401 });
   const body = (await req.json().catch(() => null)) as
-    | { text?: string; keywords?: string[]; group?: string; targetUrl?: string }
+    | {
+        text?: string;
+        keywords?: string[];
+        group?: string;
+        targetUrl?: string;
+        rows?: { keyword: string; targetUrl?: string; groupName?: string }[];
+      }
     | null;
   if (!body) return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
+
+  // Structured CSV import: each row can carry its own target URL / group.
+  if (body.rows?.length) {
+    const project = await getOrCreateProject();
+    const { added, skipped } = await addKeywordRows(project.id, body.rows);
+    return NextResponse.json({ ok: true, imported: body.rows.length, added, skippedExisting: skipped, duplicatesInPaste: 0, invalid: 0 });
+  }
 
   const parsed = body.text
     ? parseBulkKeywords(body.text)
