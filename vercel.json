@@ -5,6 +5,8 @@
   "installCommand": "npm ci",
   "crons": [
     { "path": "/api/cron/maintenance", "schedule": "0 2 * * *" },
-    { "path": "/api/cron/generate-tools", "schedule": "0 4 * * *" }
+    { "path": "/api/cron/generate-tools", "schedule": "0 4 * * *" },
+    { "path": "/api/cron/rank-create-jobs", "schedule": "30 1 * * *" },
+    { "path": "/api/cron/rank-process-jobs", "schedule": "*/15 * * * *" }
   ]
 }

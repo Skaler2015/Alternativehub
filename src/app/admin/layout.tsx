@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Send,
   Tag,
+  TrendingUp,
   Users,
 } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
@@ -22,6 +23,7 @@ import { requireRole } from "@/lib/authz";
 const LINKS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/admin/rank", label: "Rank Tracker", icon: TrendingUp },
   { href: "/admin/listings", label: "Listings", icon: ListChecks },
   { href: "/admin/blog", label: "Blog", icon: FileText },
   { href: "/admin/deals", label: "Deals", icon: Tag },

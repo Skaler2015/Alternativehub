@@ -100,40 +100,40 @@ enum AnalyticsEventType {
 // ─────────────────────────── Identity & Access ───────────────────────────
 
 model User {
-  id             String    @id @default(cuid())
-  name           String?
-  email          String    @unique
-  emailVerified  DateTime?
-  image          String?
-  passwordHash   String?
-  role           UserRole  @default(USER)
-  bio            String?
-  website        String?
-  reputation     Int       @default(0)
-  isBanned       Boolean   @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          UserRole  @default(USER)
+  bio           String?
+  website       String?
+  reputation    Int       @default(0)
+  isBanned      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  accounts        Account[]
-  sessions        Session[]
-  reviews         Review[]
-  reviewReplies   Review[]         @relation("ReviewReplies")
-  reviewVotes     ReviewVote[]
-  following       Follow[]         @relation("Follower")
-  followers       Follow[]         @relation("Following")
-  companyFollows  CompanyFollow[]
-  claimedCompanies Company[]       @relation("ClaimedCompanies")
-  blogComments    BlogComment[]
+  accounts          Account[]
+  sessions          Session[]
+  reviews           Review[]
+  reviewReplies     Review[]           @relation("ReviewReplies")
+  reviewVotes       ReviewVote[]
+  following         Follow[]           @relation("Follower")
+  followers         Follow[]           @relation("Following")
+  companyFollows    CompanyFollow[]
+  claimedCompanies  Company[]          @relation("ClaimedCompanies")
+  blogComments      BlogComment[]
   pushSubscriptions PushSubscription[]
-  votes           Vote[]
-  bookmarks       Bookmark[]
-  collections     Collection[]
-  reports         Report[]
-  notifications   Notification[]
-  recentlyViewed  RecentlyViewed[]
-  submittedTools  Tool[]           @relation("SubmittedTools")
-  activityLogs    ActivityLog[]
-  blogPosts       BlogPost[]
+  votes             Vote[]
+  bookmarks         Bookmark[]
+  collections       Collection[]
+  reports           Report[]
+  notifications     Notification[]
+  recentlyViewed    RecentlyViewed[]
+  submittedTools    Tool[]             @relation("SubmittedTools")
+  activityLogs      ActivityLog[]
+  blogPosts         BlogPost[]
 
   @@index([role])
 }
@@ -179,8 +179,8 @@ model VerificationToken {
 // ─────────────────────────────── Catalog ───────────────────────────────
 
 model Company {
-  id          String   @id @default(cuid())
-  slug        String   @unique
+  id          String  @id @default(cuid())
+  slug        String  @unique
   name        String
   websiteUrl  String?
   description String?
@@ -196,7 +196,7 @@ model Company {
   claimVerified Boolean   @default(false)
   claimedAt     DateTime?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   tools     Tool[]
   claimedBy User?           @relation("ClaimedCompanies", fields: [claimedById], references: [id], onDelete: SetNull)
@@ -239,8 +239,8 @@ model Category {
 }
 
 model Platform {
-  id   String @id @default(cuid())
-  slug String @unique
+  id   String  @id @default(cuid())
+  slug String  @unique
   name String // Web, Windows, macOS, Linux, iOS, Android, Chrome, CLI, API…
   icon String?
 
@@ -248,13 +248,13 @@ model Platform {
 }
 
 model Tool {
-  id          String       @id @default(cuid())
-  slug        String       @unique
+  id          String      @id @default(cuid())
+  slug        String      @unique
   name        String
   tagline     String?
   description String
-  status      ToolStatus   @default(PENDING)
-  tier        ListingTier  @default(STANDARD)
+  status      ToolStatus  @default(PENDING)
+  tier        ListingTier @default(STANDARD)
 
   websiteUrl   String
   affiliateUrl String?
@@ -284,8 +284,8 @@ model Tool {
   viewCount        Int   @default(0)
   bookmarkCount    Int   @default(0)
 
-  featured   Boolean @default(false)
-  verified   Boolean @default(false)
+  featured     Boolean @default(false)
+  verified     Boolean @default(false)
   isOpenSource Boolean @default(false)
 
   // Information-hub details (Phase 2)
@@ -301,9 +301,9 @@ model Tool {
   integrations String[]
 
   // SEO
-  seoTitle    String?
-  seoDesc     String?
-  keywords    String[]
+  seoTitle     String?
+  seoDesc      String?
+  keywords     String[]
   canonicalUrl String?
 
   categoryId    String
@@ -321,18 +321,18 @@ model Tool {
   company     Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   submittedBy User?     @relation("SubmittedTools", fields: [submittedById], references: [id], onDelete: SetNull)
 
-  platforms      ToolPlatform[]
-  features       ToolFeature[]
-  pricingPlans   PricingPlan[]
-  tags           ToolTag[]
-  media          Media[]
-  faqs           Faq[]
-  reviews        Review[]
-  votes          Vote[]
-  bookmarks      Bookmark[]
-  reports        Report[]
+  platforms       ToolPlatform[]
+  features        ToolFeature[]
+  pricingPlans    PricingPlan[]
+  tags            ToolTag[]
+  media           Media[]
+  faqs            Faq[]
+  reviews         Review[]
+  votes           Vote[]
+  bookmarks       Bookmark[]
+  reports         Report[]
   collectionItems CollectionItem[]
-  recentlyViewed RecentlyViewed[]
+  recentlyViewed  RecentlyViewed[]
   comparisonItems ComparisonItem[]
 
   alternativesFrom Alternative[] @relation("AlternativeSource")
@@ -404,14 +404,14 @@ model ToolFeature {
 }
 
 model PricingPlan {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   toolId    String
   name      String // Free, Pro, Team, Enterprise
-  price     Decimal @db.Decimal(10, 2)
-  period    String  @default("month") // month | year | one-time
+  price     Decimal  @db.Decimal(10, 2)
+  period    String   @default("month") // month | year | one-time
   features  String[]
-  highlight Boolean @default(false)
-  sortOrder Int     @default(0)
+  highlight Boolean  @default(false)
+  sortOrder Int      @default(0)
 
   tool Tool @relation(fields: [toolId], references: [id], onDelete: Cascade)
 
@@ -455,11 +455,11 @@ model Media {
 }
 
 model Faq {
-  id        String @id @default(cuid())
-  toolId    String
-  question  String
-  answer    String
-  sortOrder Int    @default(0)
+  id          String  @id @default(cuid())
+  toolId      String
+  question    String
+  answer      String
+  sortOrder   Int     @default(0)
   aiGenerated Boolean @default(false)
 
   tool Tool @relation(fields: [toolId], references: [id], onDelete: Cascade)
@@ -470,13 +470,13 @@ model Faq {
 // ─────────────────────── Alternatives & Comparisons ───────────────────────
 
 model Alternative {
-  id            String   @id @default(cuid())
-  sourceToolId  String
-  targetToolId  String
-  matchScore    Float    @default(0) // 0–100 similarity/quality of the alternative
-  upvotes       Int      @default(0)
-  aiGenerated   Boolean  @default(false)
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  sourceToolId String
+  targetToolId String
+  matchScore   Float    @default(0) // 0–100 similarity/quality of the alternative
+  upvotes      Int      @default(0)
+  aiGenerated  Boolean  @default(false)
+  createdAt    DateTime @default(now())
 
   source Tool @relation("AlternativeSource", fields: [sourceToolId], references: [id], onDelete: Cascade)
   target Tool @relation("AlternativeTarget", fields: [targetToolId], references: [id], onDelete: Cascade)
@@ -515,15 +515,15 @@ model ComparisonItem {
 // ────────────────────────────── Community ──────────────────────────────
 
 model Review {
-  id        String   @id @default(cuid())
-  toolId    String
-  userId    String
-  rating    Int // 1–5
-  title     String?
-  body      String
-  helpful   Int      @default(0)
-  approved  Boolean  @default(true)
-  verified  Boolean  @default(false) // reviewer signed in via a linked OAuth account
+  id       String  @id @default(cuid())
+  toolId   String
+  userId   String
+  rating   Int // 1–5
+  title    String?
+  body     String
+  helpful  Int     @default(0)
+  approved Boolean @default(true)
+  verified Boolean @default(false) // reviewer signed in via a linked OAuth account
 
   // Optional G2-style context
   useCase     String?
@@ -531,9 +531,9 @@ model Review {
   companySize String?
 
   // Official reply (admin / moderator / claimed company)
-  reply        String?
-  repliedAt    DateTime?
-  repliedById  String?
+  reply       String?
+  repliedAt   DateTime?
+  repliedById String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -636,13 +636,13 @@ model RecentlyViewed {
 }
 
 model Report {
-  id        String       @id @default(cuid())
-  toolId    String
-  userId    String?
-  reason    ReportReason
-  detail    String?
-  status    ReportStatus @default(OPEN)
-  createdAt DateTime     @default(now())
+  id         String       @id @default(cuid())
+  toolId     String
+  userId     String?
+  reason     ReportReason
+  detail     String?
+  status     ReportStatus @default(OPEN)
+  createdAt  DateTime     @default(now())
   resolvedAt DateTime?
 
   tool Tool  @relation(fields: [toolId], references: [id], onDelete: Cascade)
@@ -667,10 +667,10 @@ model Notification {
 }
 
 model NewsletterSubscriber {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  confirmedAt  DateTime?
-  createdAt    DateTime  @default(now())
+  id             String    @id @default(cuid())
+  email          String    @unique
+  confirmedAt    DateTime?
+  createdAt      DateTime  @default(now())
   unsubscribedAt DateTime?
 }
 
@@ -785,4 +785,163 @@ model ActivityLog {
 
   @@index([entity, entityId])
   @@index([userId, createdAt])
+}
+
+// ─────────────────────── SEO Rank Tracker (admin-only) ───────────────────────
+
+enum RankDevice {
+  DESKTOP
+  MOBILE
+}
+
+enum RankJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  RETRY
+}
+
+enum RankCheckStatus {
+  FOUND
+  NOT_FOUND
+  ERROR
+}
+
+model RankProject {
+  id                   String     @id @default(cuid())
+  name                 String
+  domain               String // normalized host, e.g. www.alternativehub.in
+  searchEngine         String     @default("google")
+  country              String     @default("in")
+  language             String     @default("en")
+  device               RankDevice @default(DESKTOP)
+  rankDepth            Int        @default(100)
+  active               Boolean    @default(true)
+  autoTracking         Boolean    @default(false)
+  frequency            String     @default("daily") // daily | weekly | custom
+  preferredHour        Int        @default(7) // local hour (0-23)
+  intervalDays         Int        @default(1) // used when frequency = custom
+  timezone             String     @default("Asia/Kolkata")
+  historyRetentionDays Int        @default(365)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  keywords RankKeyword[]
+  history  RankHistory[]
+  jobs     RankJob[]
+
+  @@index([active])
+}
+
+model RankKeyword {
+  id            String    @id @default(cuid())
+  projectId     String
+  keyword       String // original display
+  normalized    String // lowercased, whitespace-collapsed (for dedupe)
+  targetUrl     String?
+  groupName     String?
+  active        Boolean   @default(true)
+  // denormalized latest state (fast dashboard/table; source of truth is RankHistory)
+  currentRank   Int? // null = not ranking within depth / not yet checked
+  previousRank  Int?
+  rankingUrl    String?
+  lastStatus    String? // Improved | Dropped | No Change | New | Dropped Out | Newly Ranking | Not Ranking
+  lastCheckedAt DateTime?
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  project RankProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  history RankHistory[]
+  jobs    RankJob[]
+
+  @@unique([projectId, normalized])
+  @@index([projectId, active])
+  @@index([projectId, groupName])
+  @@index([projectId, currentRank])
+}
+
+model RankHistory {
+  id           String          @id @default(cuid())
+  projectId    String
+  keywordId    String
+  rank         Int? // null when not found within depth
+  rankingUrl   String?
+  rankingTitle String?
+  allUrls      Json? // all matching URLs from the domain, ordered by rank
+  searchEngine String
+  country      String
+  language     String
+  device       RankDevice
+  provider     String
+  status       RankCheckStatus
+  errorMessage String?
+  checkedAt    DateTime        @default(now())
+
+  project RankProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  keyword RankKeyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@index([keywordId, checkedAt])
+  @@index([projectId, checkedAt])
+  @@index([projectId, status, checkedAt])
+}
+
+model RankJob {
+  id           String        @id @default(cuid())
+  projectId    String
+  keywordId    String
+  status       RankJobStatus @default(PENDING)
+  attempts     Int           @default(0)
+  priority     Int           @default(0)
+  nextRunAt    DateTime      @default(now())
+  startedAt    DateTime?
+  completedAt  DateTime?
+  errorMessage String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  project RankProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  keyword RankKeyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextRunAt])
+  @@index([projectId, status])
+  @@index([keywordId, status])
+}
+
+model RankProviderConfig {
+  id                String   @id @default("default")
+  provider          String   @default("none") // none | serpapi | dataforseo
+  apiKeyEnc         String? // AES-256-GCM encrypted
+  apiSecretEnc      String?
+  endpoint          String?
+  requestsPerMinute Int      @default(30)
+  batchSize         Int      @default(10)
+  requestDelayMs    Int      @default(1200)
+  maxRetries        Int      @default(3)
+  dailyQuota        Int?
+  updatedAt         DateTime @updatedAt
+}
+
+model RankApiUsage {
+  id        String   @id @default(cuid())
+  date      String   @unique // YYYY-MM-DD in project timezone
+  requests  Int      @default(0)
+  success   Int      @default(0)
+  failed    Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model RankLog {
+  id         String   @id @default(cuid())
+  type       String // API_LIMIT | API_ERROR | TIMEOUT | INVALID_KEYWORD | AUTH_ERROR | NETWORK_ERROR | INFO
+  message    String
+  keyword    String?
+  provider   String?
+  httpStatus Int?
+  attempt    Int?
+  createdAt  DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([createdAt])
 }
