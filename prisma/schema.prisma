@@ -945,3 +945,11 @@ model RankLog {
   @@index([type, createdAt])
   @@index([createdAt])
 }
+
+model RankGscConfig {
+  id                String   @id @default("default")
+  enabled           Boolean  @default(false)
+  siteUrl           String? // GSC property: https://www.alternativehub.in/ or sc-domain:alternativehub.in
+  serviceAccountEnc String? // encrypted service-account JSON key
+  updatedAt         DateTime @updatedAt
+}

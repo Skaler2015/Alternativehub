@@ -8,6 +8,7 @@ import {
   Gauge,
   KeyRound,
   Lightbulb,
+  LineChart,
   ListChecks,
   Minus,
   ScrollText,
@@ -80,6 +81,9 @@ export default async function RankDashboard() {
           </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href="/admin/rank/import"><FileUp className="size-4" /> Import</Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/admin/rank/gsc"><LineChart className="size-4" /> Search Console</Link>
           </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href="/admin/rank/logs"><ScrollText className="size-4" /> Logs</Link>
