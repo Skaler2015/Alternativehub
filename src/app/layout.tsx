@@ -6,6 +6,7 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { RegisterSW } from "@/components/pwa/register-sw";
 import { AdScript } from "@/components/monetization/ad-script";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
+import { StatCounter } from "@/components/analytics/statcounter";
 import { websiteJsonLd, organizationJsonLd } from "@/lib/seo";
 import { getLocale } from "@/lib/i18n/server";
 import { getFlatDictionary } from "@/lib/i18n";
@@ -73,6 +74,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <RegisterSW />
         <AdScript />
         <GoogleAnalytics />
+        <StatCounter />
       </body>
     </html>
   );
