@@ -1,11 +1,12 @@
 import type { NextConfig } from "next";
 
-// Pragmatic CSP: keeps the app (Next inline runtime, Tailwind styles) and
-// AdSense working while blocking object/base/form-exfil and framing. Broad
-// img/connect are required for arbitrary tool logos and analytics.
+// Pragmatic CSP: keeps the app (Next inline runtime, Tailwind styles), AdSense
+// and analytics (Google Analytics + Statcounter) working while blocking
+// object/base/form-exfil and framing. Broad img/connect are required for
+// arbitrary tool logos and analytics beacons.
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.gstatic.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.gstatic.com https://www.googletagmanager.com https://*.google-analytics.com https://www.statcounter.com https://c.statcounter.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
