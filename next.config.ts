@@ -6,7 +6,7 @@ import type { NextConfig } from "next";
 // arbitrary tool logos and analytics beacons.
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.gstatic.com https://www.googletagmanager.com https://*.google-analytics.com https://www.statcounter.com https://c.statcounter.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.gstatic.com https://*.doubleclick.net https://*.adtrafficquality.google https://www.googletagmanager.com https://*.google-analytics.com https://www.statcounter.com https://c.statcounter.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
