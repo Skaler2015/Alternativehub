@@ -27,7 +27,10 @@ const steps: string[][] = [
   ["tsx", "scripts/db-wait.ts"],
   ["tsx", "scripts/migrate-retry.ts"],
   ["tsx", "scripts/seed-if-empty.ts"],
-  ["tsx", "scripts/expand-catalog-7.ts"],
+  // Self-healing: populates the full catalog on a fresh/partial DB, no-ops on a
+  // complete one. Replaces the old single-batch step so provider migrations
+  // (e.g. Neon → Supabase) come up with the whole catalog, not just batch 7.
+  ["tsx", "scripts/ensure-catalog.ts"],
 ];
 
 for (const [cmd, ...args] of steps) {
