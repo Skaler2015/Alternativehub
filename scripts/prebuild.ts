@@ -14,6 +14,15 @@ if (!process.env.DATABASE_URL) {
   process.exit(0);
 }
 
+// The schema now declares directUrl = env("DIRECT_URL") for pooled providers
+// (e.g. Supabase PgBouncer on :6543, direct on :5432). On single-URL providers
+// like Neon, DIRECT_URL is absent — default it to DATABASE_URL so migrate steps
+// (and any child process) always have a resolvable direct connection.
+if (!process.env.DIRECT_URL) {
+  process.env.DIRECT_URL = process.env.DATABASE_URL;
+  console.warn("[prebuild] DIRECT_URL not set — defaulting to DATABASE_URL.");
+}
+
 const steps: string[][] = [
   ["tsx", "scripts/db-wait.ts"],
   ["tsx", "scripts/migrate-retry.ts"],

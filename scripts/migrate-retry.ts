@@ -14,6 +14,13 @@
  */
 import { spawnSync } from "node:child_process";
 
+// The schema declares directUrl = env("DIRECT_URL"). On single-URL providers
+// (Neon) it's absent — default it to DATABASE_URL so `migrate deploy` always has
+// a resolvable direct connection, whether this runs via prebuild or db:setup.
+if (!process.env.DIRECT_URL && process.env.DATABASE_URL) {
+  process.env.DIRECT_URL = process.env.DATABASE_URL;
+}
+
 const ATTEMPTS = 4;
 
 function runMigrate(): { ok: boolean; timedOut: boolean } {

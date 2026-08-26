@@ -6,8 +6,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Falls back to DATABASE_URL when unset, so Neon (single URL) keeps working.
+  // With a pooled provider like Supabase (PgBouncer on :6543), set DIRECT_URL to
+  // the direct connection (:5432) so migrations run on a non-pooled channel.
+  directUrl = env("DIRECT_URL")
 }
 
 // ─────────────────────────────── Enums ───────────────────────────────
