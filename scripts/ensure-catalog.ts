@@ -5,17 +5,17 @@
  * (e.g. after migrating Neon -> Supabase) would otherwise come up with only a
  * fraction of the tools.
  *
- * Reliability notes learned the hard way on Supabase:
- *   - Heavy bulk inserts run over DIRECT_URL (the session-mode pooler / direct
- *     connection, :5432) instead of the transaction pooler (:6543). The
- *     transaction pooler is meant for short serverless queries and is flaky for
- *     long bulk work; the session connection is the right channel for seeding.
- *   - A wall-clock BUDGET caps how long this step runs so a slow (high-latency)
- *     provider can never push the whole build past Vercel's limit. Whatever is
- *     left is finished on the next deploy — every batch uses skipDuplicates, so
- *     re-running is safe and only inserts what's missing.
- *   - The tool count is logged before and after each batch, so the deploy log
- *     shows exactly which batch added how many rows (or added nothing).
+ * Reliability notes learned the hard way on Supabase free tier:
+ *   - Run everything over DATABASE_URL, the TRANSACTION pooler (:6543,
+ *     pgbouncer). PgBouncer multiplexes many client connections onto a few
+ *     backend ones, so bulk work can't exhaust the tiny free-tier connection
+ *     limit. (An earlier attempt over the session pooler / DIRECT_URL opened a
+ *     real backend connection per client and briefly starved the running site.)
+ *   - A generous wall-clock BUDGET caps the step so it can never push the whole
+ *     build past Vercel's limit; whatever is left finishes on the next deploy.
+ *     Every batch uses skipDuplicates, so re-running only inserts what's missing.
+ *   - Tool count is logged before/after each batch, so the deploy log shows
+ *     exactly which batch added how many rows (or added nothing).
  *
  * Never fails the build: problems log a warning and exit 0. A live site with a
  * partial catalog beats a failed deploy.
@@ -27,10 +27,10 @@ import { PrismaClient } from "@prisma/client";
 // fresh/partial DB triggers population while a healthy one skips.
 const TARGET = 4000;
 
-// Stop STARTING new batches after this many ms. The batch already running
-// finishes; the rest wait for the next deploy. Keeps total build time bounded
-// even on a high-latency database an ocean away from the build region.
-const BUDGET_MS = 12 * 60 * 1000; // 12 minutes
+// Stop STARTING new batches after this long. The batch already running finishes;
+// the rest wait for the next deploy. Vercel Pro allows ~45 min builds, so 25 min
+// leaves ample margin for the rest of the build.
+const BUDGET_MS = 25 * 60 * 1000;
 
 const BATCHES = [
   "scripts/expand-catalog.ts",
@@ -42,15 +42,8 @@ const BATCHES = [
   "scripts/expand-catalog-7.ts",
 ];
 
-// Bulk work belongs on the direct/session connection, not the txn pooler.
-const bulkUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
-
-function makeClient(): PrismaClient {
-  return bulkUrl ? new PrismaClient({ datasourceUrl: bulkUrl }) : new PrismaClient();
-}
-
 async function countTools(): Promise<number> {
-  const prisma = makeClient();
+  const prisma = new PrismaClient();
   try {
     return await prisma.tool.count();
   } catch (err) {
@@ -72,23 +65,18 @@ async function main() {
     return;
   }
 
-  console.log(
-    `[ensure-catalog] ${count} tools present (< ${TARGET}) — populating` +
-      `${bulkUrl && process.env.DIRECT_URL ? " via DIRECT_URL (session pooler)" : ""}...`,
-  );
+  console.log(`[ensure-catalog] ${count} tools present (< ${TARGET}) — populating over the transaction pooler...`);
 
   const start = Date.now();
   for (const batch of BATCHES) {
     if (Date.now() - start > BUDGET_MS) {
-      console.warn(`[ensure-catalog] Time budget hit — stopping. Remaining batches run on next deploy.`);
+      console.warn(`[ensure-catalog] Time budget hit — stopping. Remaining batches run on the next deploy.`);
       break;
     }
     const before = count;
     const res = spawnSync("npx", ["tsx", batch], {
       stdio: "inherit",
       shell: process.platform === "win32",
-      // Route the batch's own PrismaClient at the bulk (session) connection.
-      env: bulkUrl ? { ...process.env, DATABASE_URL: bulkUrl } : process.env,
     });
     count = await countTools();
     const added = count >= 0 && before >= 0 ? count - before : NaN;
