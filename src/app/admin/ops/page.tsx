@@ -1,5 +1,6 @@
-import { Cpu, RefreshCw, Link2, Sparkles, Users, Wand2, PackagePlus } from "lucide-react";
+import { Cpu, RefreshCw, Link2, Sparkles, Users, Wand2, PackagePlus, Database } from "lucide-react";
 import { OpsButton } from "@/components/admin/ops-button";
+import { PopulateCatalogButton } from "@/components/admin/populate-catalog-button";
 import { aiEnabled } from "@/lib/ai";
 import { emailEnabled } from "@/lib/email";
 
@@ -26,6 +27,21 @@ export default function AdminOpsPage() {
       </div>
 
       <div className="space-y-3">
+        {/* Bulk catalog publish — fills the full software catalog on demand */}
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex size-9 items-center justify-center rounded-xl bg-primary/15 text-primary"><Database className="size-4" /></span>
+            <div>
+              <p className="text-sm font-medium">Publish full catalog</p>
+              <p className="text-xs text-muted-foreground">
+                Publish the entire curated software &amp; tools catalog (thousands of entries) in one go.
+                Safe to run anytime — it only adds what&apos;s missing, never duplicates.
+              </p>
+            </div>
+          </div>
+          <PopulateCatalogButton />
+        </div>
+
         {OPS.map((op) => (
           <div key={op.action} className="flex items-center justify-between gap-4 rounded-2xl border bg-card p-4">
             <div className="flex items-start gap-3">
